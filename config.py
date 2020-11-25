@@ -21,7 +21,7 @@ class DevelopmentConfig(object):
     DEBUG = True
 
     """SQLAlchemy configuration"""
-    SQLALCHEMY_DATABASE_URI = 'mysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}'.format(
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}'.format(
         USER=os.getenv('MYSQL_USER'),
         PASSWORD=os.getenv('MYSQL_PASSWORD'),
         HOST=os.getenv('MYSQL_HOST'),
@@ -53,7 +53,8 @@ class DevelopmentConfig(object):
 
     SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT')
 
-    ENGINE_HOST = os.getenv('ENGINE_HOST')
+    HOST_NAME = os.getenv('HOST_NAME')
+    SERVICE_NAME = os.getenv('SERVICE_NAME')
     SERVICE_EMAIL = os.getenv('SERVICE_EMAIL')
 
 

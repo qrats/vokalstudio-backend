@@ -9,4 +9,12 @@ class UserSchema(ma.Schema):
     role = EnumField(UserRole, by_value=True)
 
     class Meta:
-        fields = ('id', 'email', 'role', 'first_name', 'last_name', 'phone_number', 'verified')
+        fields = (
+            'id',
+            'email',
+            'role',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'verified'
+        )

@@ -22,13 +22,16 @@ curl --location --request GET '${BASE_URL}/profile' \
 - Response
 ```text
 {
-  "email": "admin@yahoo.com",
-  "first_name": "John",
-  "id": 14,
-  "last_name": "Doe",
-  "phone_number": null,
-  "role": "Admin",
-  "verified": false
+    "data": {
+        "email": "joe.biden@hotmail.com",
+        "first_name": "Joe",
+        "id": 1,
+        "last_name": "Biden",
+        "phone_number": null,
+        "role": "User",
+        "verified": true
+    },
+    "error": false
 }
 ```
 
@@ -52,9 +55,9 @@ curl --location --request PUT '${BASE_URL}/profile' \
 --header 'Authorization: Bearer ${ACCESS_TOKEN}' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-  "email": "admin@yahoo.com",
-  "first_name": "John",
-  "last_name": "Brook",
+  "email": "donald.trump@hotmail.com",
+  "first_name": "Donald",
+  "last_name": "Trump",
   "phone_number": "207-731-8826",
   "role": "Admin"
 }'
@@ -62,13 +65,16 @@ curl --location --request PUT '${BASE_URL}/profile' \
 - Response
 ```text
 {
-  "email": "admin@yahoo.com",
-  "first_name": "John",
-  "id": 14,
-  "last_name": "Brook",
-  "phone_number": "207-731-8826",
-  "role": "Admin",
-  "verified": false
+    "data": {
+        "email": "donald.trump@hotmail.com",
+        "first_name": "Donald",
+        "id": 1,
+        "last_name": "Trump",
+        "phone_number": "207-731-8826",
+        "role": "Admin",
+        "verified": true
+    },
+    "error": false
 }
 ```
 
@@ -93,7 +99,7 @@ curl --location --request GET '${BASE_URL}/profile/password-reset' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer ${ACCESS_TOKEN}' \
 --data-raw '{
-    "email": "admin@yahoo.com",
+    "email": "donald.trump@yhotmail.com",
     "current_password": "password123P!",
     "new_password": "newpwd123P!"
 }'

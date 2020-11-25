@@ -1,15 +1,15 @@
-import json
 from datetime import datetime
-from flask import make_response, jsonify
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, \
     get_jwt_identity, get_raw_jwt
+from flask import current_app as app
+
 from src.models.revoked_tokens import RevokedTokenModel
 from src.models.users import UserModel, UserRole
 
 from src.utils.hash import generate_hash, verify_hash
 
-from src.utils.api_response import *
+from src.utils.api_response import APIResponse
 
 from src.utils.auth_token import generate_confirmation_token, confirm_token
 from src.utils.email import send_registration_email
@@ -33,7 +33,7 @@ class SignUpResource(Resource):
 
             if user is not None:
                 if user.verified:
-                    return error_409("User already exist!")
+                    return APIResponse.error_409("User already exist!")
             else:
                 user = UserModel(email=data['email'])
 
@@ -47,16 +47,19 @@ class SignUpResource(Resource):
             payload = {
                 'email': user.email,
                 'first_name': user.first_name,
-                'last_name': user.last_name
+                'last_name': user.last_name,
+                'service_name': app.config['SERVICE_NAME'],
+                'host_name': app.config['HOST_NAME']
             }
+
             send_registration_email(payload, token)
             user.save()
 
             response = {'message': 'Email sent!'}
-            return make_response(response, 201)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class SignInResource(Resource):
@@ -73,7 +76,7 @@ class SignInResource(Resource):
                 UserModel.email == email
             ])
             if user is None:
-                return error_404("User not found!")
+                return APIResponse.error_404("User not found!")
 
             if user.verified:
                 if verify_hash(data['password'], user.password):
@@ -81,15 +84,15 @@ class SignInResource(Resource):
                         'access_token': create_access_token(identity=email),
                         'refresh_token': create_refresh_token(identity=email)
                     }
-                    return make_response(response, 200)
+                    return APIResponse.success_200(response)
                 else:
-                    return error_400("Invalid password!")
+                    return APIResponse.error_400("Invalid password!")
             else:
-                return error_403("Account is not confirmed yet!")
+                return APIResponse.error_403("User not verified!")
 
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class SignOutResource(Resource):
@@ -100,10 +103,10 @@ class SignOutResource(Resource):
             revoked_token = RevokedTokenModel(jti=jti)
             revoked_token.add()
             response = {'message': 'Token revoked'}
-            return make_response(response, 204)
+            return APIResponse.success_204(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class TokenRefreshResource(Resource):
@@ -115,10 +118,10 @@ class TokenRefreshResource(Resource):
                 'access_token': create_access_token(identity=email),
                 'refresh_token': create_refresh_token(identity=email)
             }
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class UserVerifyResource(Resource):
@@ -131,20 +134,20 @@ class UserVerifyResource(Resource):
             email = confirm_token(data['token'])
 
             if email is None:
-                return error_404("The link has been expired or invalid.")
+                return APIResponse.error_404("The link has been expired or invalid.")
 
             user = UserModel.get_first([UserModel.email == email])
             if user.verified:
-                return error_400("User already verified.")
+                return APIResponse.error_400("User already verified.")
 
             user.verified = True
             user.verified_at = datetime.utcnow()
             user.save()
             response = {"message": "User has been verified."}
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class ResendVerifyEmailResource(Resource):
@@ -157,7 +160,7 @@ class ResendVerifyEmailResource(Resource):
             email = data['email']
             user = UserModel.get_first([UserModel.email == email])
             if user.verified:
-                return error_404("User not found.")
+                return APIResponse.error_404("User not found.")
 
             payload = {
                 'email': user.email,
@@ -166,11 +169,12 @@ class ResendVerifyEmailResource(Resource):
             }
             token = generate_confirmation_token(email)
             send_registration_email(payload, token)
+
             response = {"message": "Email resent."}
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class UpdateEmailResource(Resource):
@@ -183,16 +187,26 @@ class UpdateEmailResource(Resource):
         try:
             user = UserModel.get_first([UserModel.email == data['old_email']])
             if user is None:
-                return error_404("User not found")
+                return APIResponse.error_404("User not found")
 
             new_user = UserModel.get_first([UserModel.email == data['new_email']])
             if new_user is not None:
-                return error_409("Email already exist.")
+                return APIResponse.error_409("Email already exist.")
 
             user.email = data['new_email']
             token = generate_confirmation_token(data['new_email'])
-            send_registration_email(data['new_email'], token)
+            payload = {
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'service_name': app.config['SERVICE_NAME'],
+                'host_name': app.config['HOST_NAME']
+            }
+            send_registration_email(payload, token)
+
             user.save()
+            response = {'message': 'Email updated'}
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()

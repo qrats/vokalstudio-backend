@@ -49,18 +49,19 @@ def create_app(config_obj=None):
     api_router.add_resource(ResendVerifyEmailResource, "/auth/email/resend", methods=['POST'])
     api_router.add_resource(UpdateEmailResource, "/auth/email/update", methods=['POST'])
 
-    from src.resources.profile import ProfileResource
-    api_router.add_resource(ProfileResource, "/profile")
+    from src.resources.profile import GetProfileResource, UpdateProfileResource, \
+        PasswordResetResource, CloseProfileResource
+    api_router.add_resource(GetProfileResource, "/profile", methods=['GET'])
+    api_router.add_resource(UpdateProfileResource, "/profile", methods=['PUT'])
+    api_router.add_resource(PasswordResetResource, "/profile/password-reset", methods=['POST'])
+    api_router.add_resource(CloseProfileResource, "/profile/close", methods=['POST'])
 
-    from src.resources.profile import PasswordResetResource
-    api_router.add_resource(PasswordResetResource, "/profile/password-reset")
-
-    from src.resources.profile import CloseAccountResource
-    api_router.add_resource(CloseAccountResource, "/profile/close-account")
-
-    from src.resources.users import UsersResource, UserResource
-    api_router.add_resource(UsersResource, "/users/")
-    api_router.add_resource(UserResource, "/users/<id>")
+    from src.resources.users import GetUserResource, GetUsersResource, \
+        UpdateUserResource, DeleteUserResource
+    api_router.add_resource(GetUsersResource, "/users/", methods=['GET'])
+    api_router.add_resource(GetUserResource, "/users/<id>", methods=['GET'])
+    api_router.add_resource(UpdateUserResource, "/users/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteUserResource, "/users/<id>", methods=['DELETE'])
 
     api_router.register_routes()
 

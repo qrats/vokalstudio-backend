@@ -6,11 +6,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.users import UserModel, UserRole
 from src.schemas.users import UserSchema
 
-from src.utils.api_response import *
+from src.utils.api_response import APIResponse
 from src.utils.hash import generate_hash, verify_hash
 
 
-class ProfileResource(Resource):
+class GetProfileResource(Resource):
     @jwt_required
     def get(self):
         try:
@@ -19,16 +19,18 @@ class ProfileResource(Resource):
                 UserModel.email == email
             ])
             if user is None:
-                return error_404("User not found!")
+                return APIResponse.error_404("User not found!")
 
             result = UserSchema().dumps(user)
 
             response = json.loads(result)
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
+
+class UpdateProfileResource(Resource):
     @jwt_required
     def put(self):
         parser = reqparse.RequestParser()
@@ -46,7 +48,7 @@ class ProfileResource(Resource):
                 UserModel.email == email
             ])
             if user is None:
-                return error_404("User not found!")
+                return APIResponse.error_404("User not found!")
 
             user.first_name = data['first_name']
             user.last_name = data['last_name']
@@ -56,11 +58,11 @@ class ProfileResource(Resource):
             user.save()
             result = UserSchema().dumps(user)
             response = json.loads(result)
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
 
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
 class PasswordResetResource(Resource):
@@ -79,25 +81,25 @@ class PasswordResetResource(Resource):
                 UserModel.email == email
             ])
             if user is None:
-                return error_404("User not found!")
+                return APIResponse.error_404("User not found!")
 
             if not verify_hash(data['current_password'], user.password):
-                return error_400("Current password not match!")
+                return APIResponse.error_400("Current password not match!")
 
             if data['new_password'] != data['confirm_password']:
-                return error_400("Confirm password not match!")
+                return APIResponse.error_400("Confirm password not match!")
 
             user.password = generate_hash(data['new_password'])
             user.save()
             response = {'message': "Password reset success!"}
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
 
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
 
-class CloseAccountResource(Resource):
+class CloseProfileResource(Resource):
     @jwt_required
     def post(self):
         parser = reqparse.RequestParser()
@@ -111,20 +113,20 @@ class CloseAccountResource(Resource):
                 UserModel.email == email
             ])
             if user is None:
-                return error_404("User not found")
+                return APIResponse.error_404("User not found")
 
             if data['active'] is None:
-                return error_400()
+                return APIResponse.error_400()
 
             if not data['active']:
                 user.active = False
                 user.save()
 
                 response = {'message': "User deactivated!"}
-                return make_response(response, 204)
+                return APIResponse.success_204(response)
             else:
-                return error_403("Already deactivated!")
+                return APIResponse.error_403("Already deactivated!")
 
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()

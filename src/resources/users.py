@@ -6,11 +6,31 @@ from flask_jwt_extended import jwt_required, jwt_refresh_token_required, get_jwt
 from src.models.users import UserModel, UserRole
 from src.schemas.users import UserSchema
 
-from src.utils.api_response import *
+from src.utils.api_response import APIResponse
 from src.utils.hash import generate_hash
 
 
-class UserResource(Resource):
+class GetUsersResource(Resource):
+    @jwt_required
+    def get(self):
+        try:
+            users = UserModel.get_all([
+                UserModel.active == True
+            ])
+            result = UserSchema().dumps(users, many=True)
+
+            response = json.loads(result)
+            return APIResponse.success_200(response)
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
+
+    @jwt_required
+    def post(self):
+        return APIResponse.error_403()
+
+
+class GetUserResource(Resource):
     @jwt_required
     def get(self, id):
         try:
@@ -19,22 +39,24 @@ class UserResource(Resource):
                 UserModel.active == True
             ])
             if user is None:
-                return error_404()
+                return APIResponse.error_404()
 
             result = UserSchema().dumps(user)
 
             response = json.loads(result)
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
+
+class UpdateUserResource(Resource):
     @jwt_required
     def put(self, id):
         parser = reqparse.RequestParser()
         parser.add_argument('email', required=True, help='Email required!')
         parser.add_argument('password', required=True, help='Password required!')
-        roles = ("Auditor", "Uploader", "Observer")
+        roles = ("Admin", "User")
         parser.add_argument('role', choices=roles, required=True, help='Invalid role!')
         parser.add_argument('first_name')
         parser.add_argument('last_name')
@@ -46,7 +68,7 @@ class UserResource(Resource):
                 UserModel.active == True
             ])
             if user is None:
-                return error_404()
+                return APIResponse.error_404()
 
             user.email = data['email']
             user.password = generate_hash(data['password'])
@@ -58,11 +80,13 @@ class UserResource(Resource):
             result = UserSchema().dumps(user)
 
             response = json.loads(result)
-            return make_response(response, 200)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
-            return error_500()
+            return APIResponse.error_500()
 
+
+class DeleteUserResource(Resource):
     @jwt_required
     def delete(self, id):
         try:
@@ -71,32 +95,12 @@ class UserResource(Resource):
                 UserModel.active == True
             ])
             if user is None:
-                return error_404()
+                return APIResponse.error_404()
 
             user.delete()
             response = {'message': 'Entity deleted'}
-            return make_response(response, 204)
+            return APIResponse.success_204(response)
 
         except Exception as e:
             print(e)
-            return error_500()
-
-
-class UsersResource(Resource):
-    @jwt_required
-    def get(self):
-        try:
-            users = UserModel.get_all([
-                UserModel.active == True
-            ])
-            result = UserSchema().dumps(users, many=True)
-
-            response = json.loads(result)
-            return make_response(response, 200)
-        except Exception as e:
-            print(e)
-            return error_500()
-
-    @jwt_required
-    def post(self):
-        return error_403()
+            return APIResponse.error_500()
