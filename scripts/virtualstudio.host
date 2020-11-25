@@ -1,8 +1,6 @@
 server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-
-    server_name _;
+    listen 80;
+    server_name virtualstudio.host www.virtualstudio.host;
 
     location / {
         include uwsgi_params;
