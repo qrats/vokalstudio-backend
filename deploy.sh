@@ -18,8 +18,8 @@ systemctl daemon-reload
 service virtualstudio restart
 
 echo "Nginx reload..."
-cp -f /var/www/virtualstudio/backend/scripts/virtualstudio.host /etc/nginx/sites-available/
-ln -s -f /etc/nginx/sites-available/virtualstudio.host /etc/nginx/sites-enabled/
+# cp -f /var/www/virtualstudio/backend/scripts/api.virtualstudio.host /etc/nginx/sites-available/
+# ln -s -f /etc/nginx/sites-available/api.virtualstudio.host /etc/nginx/sites-enabled/
 service nginx restart
 
 echo "Celery reload..."
