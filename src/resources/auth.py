@@ -159,8 +159,12 @@ class ResendVerifyEmailResource(Resource):
         try:
             email = data['email']
             user = UserModel.get_first([UserModel.email == email])
-            if user.verified:
+
+            if user is None:
                 return APIResponse.error_404("User not found.")
+
+            if user.verified:
+                return APIResponse.error_400("User already verified.")
 
             payload = {
                 'email': user.email,
