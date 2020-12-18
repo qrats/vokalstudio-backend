@@ -54,6 +54,8 @@ class DevelopmentConfig(object):
     SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT')
 
     HOST_NAME = os.getenv('HOST_NAME')
+    CDN_HOST = os.getenv('CDN_HOST')
+
     SERVICE_NAME = os.getenv('SERVICE_NAME')
     SERVICE_EMAIL = os.getenv('SERVICE_EMAIL')
 

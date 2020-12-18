@@ -58,10 +58,21 @@ def create_app(config_obj=None):
 
     from src.resources.users import GetUserResource, GetUsersResource, \
         UpdateUserResource, DeleteUserResource
-    api_router.add_resource(GetUsersResource, "/users/", methods=['GET'])
+    api_router.add_resource(GetUsersResource, "/users", methods=['GET'])
     api_router.add_resource(GetUserResource, "/users/<id>", methods=['GET'])
     api_router.add_resource(UpdateUserResource, "/users/<id>", methods=['PUT'])
     api_router.add_resource(DeleteUserResource, "/users/<id>", methods=['DELETE'])
+
+    from src.resources.episodes import GetEpisodeResource, GetEpisodesResource, \
+        CreateEpisodesResource, UpdateEpisodesResource, DeleteEpisodesResource
+    api_router.add_resource(CreateEpisodesResource, "/episodes", methods=['POST'])
+    api_router.add_resource(GetEpisodesResource, "/episodes", methods=['GET'])
+    api_router.add_resource(GetEpisodeResource, "/episodes/<user_id>/<id>", methods=['GET'])
+    api_router.add_resource(UpdateEpisodesResource, "/episodes/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteEpisodesResource, "/episodes/<id>", methods=['DELETE'])
+
+    from src.resources.s3upload import S3SignedDataResource
+    api_router.add_resource(S3SignedDataResource, "/s3upload", methods=['POST', 'PUT'])
 
     api_router.register_routes()
 
