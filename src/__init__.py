@@ -74,6 +74,42 @@ def create_app(config_obj=None):
     from src.resources.s3upload import S3SignedDataResource
     api_router.add_resource(S3SignedDataResource, "/s3upload", methods=['POST', 'PUT'])
 
+    from src.resources.authorized_users import GetAuthorizedUsersResource, GetAuthorizedUserResource, \
+        CreateAuthorizedUserResource, UpdateAuthorizedUserResource, DeleteAuthorizedUserResource, InviteAuthorizedUserResource
+    api_router.add_resource(CreateAuthorizedUserResource, "/authorized-users", methods=['POST'])
+    api_router.add_resource(GetAuthorizedUsersResource, "/authorized-users", methods=['GET'])
+    api_router.add_resource(GetAuthorizedUserResource, "/authorized-users/<id>", methods=['GET'])
+    api_router.add_resource(UpdateAuthorizedUserResource, "/authorized-users/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteAuthorizedUserResource, "/authorized-users/<id>", methods=['DELETE'])
+    api_router.add_resource(InviteAuthorizedUserResource, "/authorized-users/invite/<id>", methods=['GET'])
+
+    from src.resources.media_objects import GetMediaObjectsResource, GetMediaObjectResource, \
+        CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource
+    api_router.add_resource(CreateMediaObjectResource, "/media-objects", methods=['POST'])
+    api_router.add_resource(GetMediaObjectsResource, "/media-objects", methods=['GET'])
+    api_router.add_resource(GetMediaObjectResource, "/media-objects/<id>", methods=['GET'])
+    api_router.add_resource(UpdateMediaObjectResource, "/media-objects/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteMediaObjectResource, "/media-objects/<id>", methods=['DELETE'])
+
+    from src.resources.uploading_platforms import GetUploadingPlatformsResource, GetUploadingPlatformResource, \
+        CreateUploadingPlatformResource, UpdateUploadingPlatformResource, DeleteUploadingPlatformResource
+    api_router.add_resource(CreateUploadingPlatformResource, "/uploading-platforms", methods=['POST'])
+    api_router.add_resource(GetUploadingPlatformsResource, "/uploading-platforms", methods=['GET'])
+    api_router.add_resource(GetUploadingPlatformResource, "/uploading-platforms/<id>", methods=['GET'])
+    api_router.add_resource(UpdateUploadingPlatformResource, "/uploading-platforms/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteUploadingPlatformResource, "/uploading-platforms/<id>", methods=['DELETE'])
+
+    from src.resources.streaming_platforms import GetStreamingPlatformsResource, GetStreamingPlatformResource, \
+        CreateStreamingPlatformResource, UpdateStreamingPlatformResource, DeleteStreamingPlatformResource
+    api_router.add_resource(CreateStreamingPlatformResource, "/streaming-platforms", methods=['POST'])
+    api_router.add_resource(GetStreamingPlatformsResource, "/streaming-platforms", methods=['GET'])
+    api_router.add_resource(GetStreamingPlatformResource, "/streaming-platforms/<id>", methods=['GET'])
+    api_router.add_resource(UpdateStreamingPlatformResource, "/streaming-platforms/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteStreamingPlatformResource, "/streaming-platforms/<id>", methods=['DELETE'])
+
+    from src.resources.oauth_tokens import OAuthTokenResource
+    api_router.add_resource(OAuthTokenResource, "/oauth-tokens", methods=['POST'])
+
     api_router.register_routes()
 
     return app

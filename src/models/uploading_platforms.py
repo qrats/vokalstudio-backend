@@ -1,28 +1,30 @@
-"""Media objects models and database functionality"""
+"""Connected platforms models and database functionality"""
 from src.services.db import db
 from datetime import datetime
 from src.models.users import UserModel
 
 
-class MediaObjectsModel(db.Model):
-    __tablename__ = "media_objects"
+class UploadingPlatformsModel(db.Model):
+    __tablename__ = "uploading_platforms"
 
     id = db.Column(db.String(256), primary_key=True)
-    uploader_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    file_name = db.Column(db.String(256), nullable=False)
-    description = db.Column(db.String(4096), nullable=True)
-    url = db.Column(db.String(1024), nullable=True)
-    image = db.Column(db.String(1024), nullable=True)
-    type = db.Column(db.String(256), nullable=True, default='video')  # [video, audio]
-    length = db.Column(db.Integer, nullable=True, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    active = db.Column(db.Boolean, nullable=True, default=False)
+    service = db.Column(db.String(256), nullable=False)
+    views = db.Column(db.Integer, nullable=False, default=0)
+    service_email = db.Column(db.String(256), nullable=False)
+    channel_id = db.Column(db.String(256), nullable=False, default=None)
+    channel_name = db.Column(db.String(256), nullable=False, default=None)
+    image = db.Column(db.String(256), nullable=False)
+    refresh_token = db.Column(db.String(1024), nullable=False)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    uploader = db.relationship(UserModel, foreign_keys=uploader_id)
+    user = db.relationship(UserModel, foreign_keys=user_id)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.id} ({self.file_name}), role: {self.url}>"
+        return f"<{self.__class__.__name__}: {self.id}>"
 
     def save(self):
         try:

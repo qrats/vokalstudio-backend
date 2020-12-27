@@ -59,6 +59,20 @@ class DevelopmentConfig(object):
     SERVICE_NAME = os.getenv('SERVICE_NAME')
     SERVICE_EMAIL = os.getenv('SERVICE_EMAIL')
 
+    # Google configuration
+    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+
+    # Twitch configuration
+    TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
+    TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
+
+    # Twitch configuration
+    PODBEAN_CLIENT_ID = os.getenv('PODBEAN_CLIENT_ID')
+    PODBEAN_CLIENT_SECRET = os.getenv('PODBEAN_CLIENT_SECRET')
+    PODBEAN_REDIRECT_URI = os.getenv('PODBEAN_REDIRECT_URI')
+
 
 class ProductionConfig(object):
     DEBUG = False

@@ -16,10 +16,15 @@ class S3SignedDataResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('file_name', required=True, help='File name required!')
         parser.add_argument('category', required=True, help='Category required!')
+        parser.add_argument('unique')
         data = parser.parse_args()
 
         try:
-            prefix = f"{data['file_name'].split('.')[0][:20]}-{str(uuid.uuid4().hex)}"
+            if data['unique'].lower() == 'true':
+                prefix = f"{data['file_name'].split('.')[0][:20]}~{str(uuid.uuid4().hex)}"
+            else:
+                prefix = f"{data['file_name'].split('.')[0]}"
+
             filename = f"{prefix}.{data['file_name'].split('.')[-1]}"
             filename = re.sub('\ |\?|\!|\/|\;|\:', '', filename)
 
