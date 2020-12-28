@@ -22,7 +22,10 @@ class OAuthTokenResource(Resource):
         if r.status_code == 200:
             token = r.json()
         else:
-            return {'message': r.content}
+            return {
+                'url': url,
+                'message': r.content
+            }
 
         headers = {
             'Authorization': f'Bearer {token["access_token"]}',
