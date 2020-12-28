@@ -19,12 +19,15 @@ class OAuthTokenResource(Resource):
               f'client_id={app.config["TWITCH_CLIENT_ID"]}&client_secret={app.config["TWITCH_CLIENT_SECRET"]}' \
               f'&code={code}&grant_type=authorization_code&redirect_uri={app.config["TWITCH_REDIRECT_URI"]}'
         r = requests.post(url)
+        print(url)
+        print(r.content)
+
         if r.status_code == 200:
             token = r.json()
         else:
             return {
                 'url': url,
-                'message': r.content
+                'message': str(r.content)
             }
 
         headers = {
@@ -32,10 +35,11 @@ class OAuthTokenResource(Resource):
             'Client-ID': f'{app.config["TWITCH_CLIENT_ID"]}'
         }
         r = requests.get('https://api.twitch.tv/helix/users', headers=headers)
+        print(r.content)
         if r.status_code == 200:
             broadcaster = r.json()['data'][0]
         else:
-            return {'message': r.content}
+            return {'message': str(r.content)}
 
         print(broadcaster)
         response = {
