@@ -1,6 +1,8 @@
 import uuid
 import json
+import requests
 from datetime import datetime
+from flask import current_app as app
 from flask import make_response, jsonify
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -10,6 +12,10 @@ from src.models.streaming_platforms import StreamingPlatformsModel
 from src.schemas.streaming_platforms import StreamingPlatformsSchema
 
 from src.utils.api_response import APIResponse
+
+import googleapiclient.discovery
+import googleapiclient.errors
+from google.oauth2.credentials import Credentials
 
 
 class GetStreamingPlatformResource(Resource):
@@ -61,22 +67,168 @@ class CreateStreamingPlatformResource(Resource):
         parser.add_argument('service_email', required=True, help='Service email required!')
         parser.add_argument('refresh_token', required=True, help='Refresh token required!')
         parser.add_argument('image', required=True, help='Image required!')
-        parser.add_argument('active', required=True, help='Active required!')
+        parser.add_argument('active', required=True, type=bool, help='Active required!')
+        parser.add_argument('title', required=True, help='Title required!')
+        parser.add_argument('description', required=True, help='Description required!')
+        parser.add_argument('frame_rate')
+        parser.add_argument('resolution')
+        parser.add_argument('game_id')
+        parser.add_argument('channel_name')
+        parser.add_argument('ingestion_address')
         data = parser.parse_args()
 
         session_user = UserModel.get_first([
             UserModel.email == get_jwt_identity()
         ])
         try:
+            if data['service'] == 'Youtube':
+                info = {
+                    'refresh_token': data['refresh_token'],
+                    "client_id": app.config['GOOGLE_CLIENT_ID'],
+                    "client_secret": app.config['GOOGLE_CLIENT_SECRET'],
+                }
+                credentials = Credentials.from_authorized_user_info(info)
+                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+                request = youtube.liveBroadcasts().insert(
+                    part="snippet,contentDetails,status",
+                    body={
+                        "snippet": {
+                            "title": f"{data['title']}",
+                            "description": f"{data['description']}",
+                            "scheduledStartTime": f"{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+                        },
+                        "contentDetails": {
+                            "startWithSlate": True,
+                            "enableAutoStart": True,
+                            "enableAutoStop": True
+                        },
+                        "status": {
+                            "privacyStatus": "public",
+                            "selfDeclaredMadeForKids": False
+                        }
+                    }
+                )
+                broadcast_response = request.execute()
+
+                request = youtube.liveStreams().insert(
+                    part="snippet,cdn,contentDetails,status",
+                    body={
+                        "snippet": {
+                            "title": f"{data['title']}",
+                            "description": f"{data['description']}"
+                        },
+                        "cdn": {
+                            "frameRate": f"{data['frame_rate']}fps",
+                            "ingestionType": "rtmp",
+                            "resolution": f"{data['resolution']}p"
+                        },
+                        "contentDetails": {
+                            "isReusable": True
+                        },
+                    }
+                )
+                stream_response = request.execute()
+                stream_key = stream_response['cdn']['ingestionInfo']['streamName']
+                ingestion_address = stream_response['cdn']['ingestionInfo']['ingestionAddress']
+                channel_id = stream_response['snippet']['channelId']
+                channel_name = data['channel_name']
+
+                extra = {
+                    'resolution': data['resolution'],
+                    'frame_rate': data['frame_rate'],
+                    'broadcast_id': broadcast_response['id'],
+                    'stream_id': stream_response['id']
+                }
+
+                request = youtube.liveBroadcasts().bind(
+                    id=broadcast_response['id'],
+                    part="snippet",
+                    streamId=stream_response['id']
+                )
+                request.execute()
+
+                channels = StreamingPlatformsModel.filter_all([
+                    StreamingPlatformsModel.user_id == session_user.id,
+                    StreamingPlatformsModel.service == data['service'],
+                    StreamingPlatformsModel.channel_id == stream_response['snippet']['channelId']
+                ])
+                if len(channels) > 0:
+                    return APIResponse.error_409('Channel already connected')
+            elif data['service'] == 'Twitch':
+                url = "https://id.twitch.tv/oauth2/token"
+                params = {
+                    'grant_type': 'refresh_token',
+                    'refresh_token': data['refresh_token'],
+                    'client_id': app.config['TWITCH_CLIENT_ID'],
+                    'client_secret': app.config['TWITCH_CLIENT_SECRET']
+                }
+                r = requests.post(url, params=params)
+                if r.status_code != 200:
+                    return APIResponse.error_500("Failed connection to Twitch")
+                token = r.json()
+
+                headers = {
+                    'Authorization': f'Bearer {token["access_token"]}',
+                    'Client-ID': f'{app.config["TWITCH_CLIENT_ID"]}'
+                }
+                r = requests.get('https://api.twitch.tv/helix/users', headers=headers)
+                if r.status_code == 200:
+                    broadcaster = r.json()['data'][0]
+                else:
+                    return APIResponse.error_500("Failed to get broadcaster")
+
+                url = f'https://api.twitch.tv/helix/streams/key?broadcaster_id={broadcaster["id"]}'
+                r = requests.get(url, headers=headers)
+                stream_key = None
+                if r.status_code == 200:
+                    stream_key = r.json()['data'][0]
+                else:
+                    APIResponse.error_500("Failed to get stream key")
+
+                url = f'https://api.twitch.tv/helix/channels?broadcaster_id={broadcaster["id"]}'
+                payload = {
+                    "game_id": data['game_id'],
+                    "title": data['title'],
+                    "broadcaster_language": "en"
+                }
+                r = requests.patch(url, data=payload, headers=headers)
+                if r.status_code != 204:
+                    return APIResponse.error_500("Failed to update channel")
+
+                url = f'https://api.twitch.tv/helix/channels?broadcaster_id={broadcaster["id"]}'
+                r = requests.get(url, headers=headers)
+                if r.status_code == 200:
+                    channel = r.json()['data'][0]
+                else:
+                    return APIResponse.error_500("Failed to get channel information")
+
+                channel_id = channel['broadcaster_name']
+                channel_name = channel['game_name']
+                stream_key = stream_key['stream_key']
+                ingestion_address = data['ingestion_address']
+                extra = {
+                    'game_id': int(channel['game_id']),
+                    'broadcaster_id': str(channel['broadcaster_id']),
+                }
+            else:
+                return APIResponse.error_400("Service not support")
 
             streaming_platform = StreamingPlatformsModel(
                 id=str(uuid.uuid4().hex),
+                user_id=session_user.id,
+                active=data['active'],
                 service=data['service'],
                 service_email=data['service_email'],
                 image=data['image'],
+                stream_key=stream_key,
+                ingestion_address=ingestion_address,
+                channel_id=channel_id,
+                channel_name=channel_name,
+                title=data['title'],
+                description=data['description'],
                 refresh_token=data['refresh_token'],
-                active=data['active'],
-                user_id=session_user.id,
+                extra=extra,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
@@ -98,7 +250,13 @@ class UpdateStreamingPlatformResource(Resource):
         parser.add_argument('service_email', required=True, help='Service email required!')
         parser.add_argument('refresh_token', required=True, help='Refresh token required!')
         parser.add_argument('image', required=True, help='Image required!')
-        parser.add_argument('active', required=True, help='Active required!')
+        parser.add_argument('active', required=True, type=bool, help='Active required!')
+        parser.add_argument('title', required=True, help='Title required!')
+        parser.add_argument('description', required=True, help='Description required!')
+        parser.add_argument('frame_rate')
+        parser.add_argument('resolution')
+        parser.add_argument('game_id')
+        parser.add_argument('ingestion_address')
         data = parser.parse_args()
 
         try:
@@ -108,13 +266,105 @@ class UpdateStreamingPlatformResource(Resource):
             if streaming_platform is None:
                 return APIResponse.error_404('Streaming platform not found')
 
-            streaming_platform.service = data['service']
-            streaming_platform.service_email = data['service_email']
-            streaming_platform.refresh_token = data['refresh_token']
-            streaming_platform.image = data['image']
+            if data['service'] == 'Youtube':
+                info = {
+                    'refresh_token': streaming_platform.refresh_token,
+                    "client_id": app.config['GOOGLE_CLIENT_ID'],
+                    "client_secret": app.config['GOOGLE_CLIENT_SECRET'],
+                }
+                credentials = Credentials.from_authorized_user_info(info)
+                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+                request = youtube.liveBroadcasts().update(
+                    part="id, snippet",
+                    body={
+                        'id': streaming_platform.extra['broadcast_id'],
+                        "snippet": {
+                            "title": f"{data['title']}",
+                            "description": f"{data['description']}",
+                            "scheduledStartTime": f"{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+                        },
+                    }
+                )
+                request.execute()
+
+                if data['frame_rate'] is None or data['resolution'] is None:
+                    part = "id, snippet"
+                    body = {
+                        'id': streaming_platform.extra['stream_id'],
+                        "snippet": {
+                            "title": f"{data['title']}",
+                            "description": f"{data['description']}"
+                        },
+                    }
+                else:
+                    part = "id, snippet, cdn"
+                    body = {
+                        'id': streaming_platform.extra['stream_id'],
+                        "snippet": {
+                            "title": f"{data['title']}",
+                            "description": f"{data['description']}"
+                        },
+                        "cdn": {
+                            "frameRate": f"{data['frame_rate']}fps",
+                            "ingestionType": "rtmp",
+                            "resolution": f"{data['resolution']}p"
+                        }
+                    }
+                request = youtube.liveStreams().update(part=part, body=body)
+                request.execute()
+
+                extra = streaming_platform.extra
+                extra['frame_rate'] = data['frame_rate']
+                extra['resolution'] = data['resolution']
+                streaming_platform.extra = extra
+            if data['service'] == 'Twitch':
+                url = "https://id.twitch.tv/oauth2/token"
+                params = {
+                    'grant_type': 'refresh_token',
+                    'refresh_token': streaming_platform.refresh_token,
+                    'client_id': app.config['TWITCH_CLIENT_ID'],
+                    'client_secret': app.config['TWITCH_CLIENT_SECRET']
+                }
+                r = requests.post(url, params=params)
+                if r.status_code != 200:
+                    return APIResponse.error_500("Failed connection to Twitch")
+
+                token = r.json()
+                streaming_platform.refresh_token = token['refresh_token']
+
+                headers = {
+                    'Authorization': f'Bearer {token["access_token"]}',
+                    'Client-ID': f'{app.config["TWITCH_CLIENT_ID"]}'
+                }
+                url = f"https://api.twitch.tv/helix/channels?broadcaster_id={streaming_platform.extra['broadcaster_id']}"
+
+                payload = {
+                    "game_id": streaming_platform.extra['game_id'],
+                    "title": data['title'],
+                    "broadcaster_language": "en"
+                }
+                r = requests.patch(url, data=payload, headers=headers)
+                if r.status_code != 204:
+                    return APIResponse.error_500("Failed to update channel")
+
+                url = f"https://api.twitch.tv/helix/channels?broadcaster_id={streaming_platform.extra['broadcaster_id']}"
+                r = requests.get(url, headers=headers)
+                if r.status_code == 200:
+                    channel = r.json()['data'][0]
+                else:
+                    return APIResponse.error_500("Failed to get channel information")
+
+                streaming_platform.channel_id = channel['broadcaster_name']
+                streaming_platform.channel_name = channel['game_name']
+                streaming_platform.ingestion_address = data['ingestion_address']
+            else:
+                APIResponse.error_400("Unsupported service!")
+
+            streaming_platform.title = data['title']
+            streaming_platform.description = data['description']
             streaming_platform.active = data['active']
             streaming_platform.updated_at = datetime.utcnow()
-
             streaming_platform.save()
 
             result = StreamingPlatformsSchema().dumps(streaming_platform)

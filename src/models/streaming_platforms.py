@@ -15,9 +15,10 @@ class StreamingPlatformsModel(db.Model):
     image = db.Column(db.String(256), nullable=True)
     stream_key = db.Column(db.String(256), nullable=True)
     ingestion_address = db.Column(db.String(256), nullable=True)
+    channel_id = db.Column(db.String(256), nullable=False, default=None)
+    channel_name = db.Column(db.String(256), nullable=False, default=None)
     title = db.Column(db.String(256), nullable=True)
     description = db.Column(db.String(4096), nullable=True)
-    channel_url = db.Column(db.String(256), nullable=True)
     refresh_token = db.Column(db.String(1024), nullable=True)
     extra = db.Column(db.JSON, nullable=True)
 
