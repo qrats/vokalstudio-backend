@@ -155,11 +155,11 @@ Email on Acid - http://www.emailonacid.com/blog/details/C18/doctype_-_the_black_
 	<![endif]-->
 </head>
 <body>
-	<p>Hi, {{reg_data.first_name}} {{reg_data.last_name}},</p>
+	<p>Hi, {{invite_data.first_name}} {{invite_data.last_name}}!</p>
 	<p>You were invited to Virtual Studio.</p>
 
     <!-- Yahoo Link color fix updated: Simply bring your link styling inline. -->
-    <a href="{{reg_data.host_name}}/verify/{{token}}" target ="_blank" title="Styling Links" style="color: orange; text-decoration: none;">
+    <a href="https://virtualstudio.vokalnow.com/?link={{invite_data.studio_id}}" target ="_blank" title="Styling Links" style="color: orange; text-decoration: none;">
 		Go to virtual studio
 	</a>
 </body>

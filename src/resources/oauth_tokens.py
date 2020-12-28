@@ -38,7 +38,6 @@ class OAuthTokenResource(Resource):
         else:
             return {'message': str(r.content)}
 
-        print(broadcaster)
         response = {
             'access_token': token['access_token'],
             'refresh_token': token['refresh_token'],

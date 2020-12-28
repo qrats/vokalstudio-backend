@@ -13,9 +13,9 @@ class UploadingPlatformsModel(db.Model):
     service = db.Column(db.String(256), nullable=False)
     views = db.Column(db.Integer, nullable=False, default=0)
     service_email = db.Column(db.String(256), nullable=False)
-    channel_id = db.Column(db.String(256), nullable=False, default=None)
-    channel_name = db.Column(db.String(256), nullable=False, default=None)
-    image = db.Column(db.String(256), nullable=False)
+    channel_id = db.Column(db.String(256), nullable=True)
+    channel_name = db.Column(db.String(256), nullable=True)
+    image = db.Column(db.String(256), nullable=True)
     refresh_token = db.Column(db.String(1024), nullable=False)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

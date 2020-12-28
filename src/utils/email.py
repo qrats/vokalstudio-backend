@@ -39,3 +39,22 @@ def send_registration_email(reg_data, verify_token):
         app.config['SERVICE_EMAIL'],
         Message
     )
+
+
+def send_invitation_email(invite_data):
+    subject = 'Invited!'
+    template_loader = jinja2.FileSystemLoader(searchpath=app.config['TEMPLATES_DIR'])
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template("invitation.html")
+    html_content = template.render(invite_data=invite_data)
+
+    Message = {
+        'Body': {'Html': {'Charset': "UTF-8", 'Data': html_content}},
+        'Subject': {'Charset': "UTF-8", 'Data': subject},
+    }
+
+    send_email_ses(
+        [invite_data['email']],
+        app.config['SERVICE_EMAIL'],
+        Message
+    )

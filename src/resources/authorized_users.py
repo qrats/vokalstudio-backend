@@ -10,6 +10,7 @@ from src.models.authorized_users import AuthorizedUsersModel
 from src.schemas.authorized_users import AuthorizedUsersSchema
 
 from src.utils.api_response import APIResponse
+from src.utils.email import send_invitation_email
 
 
 class GetAuthorizedUserResource(Resource):
@@ -152,6 +153,14 @@ class InviteAuthorizedUserResource(Resource):
 
             if not authorized_user:
                 return APIResponse.error_404("No authorized user found!")
+
+            invite_data = {
+                'email': authorized_user.email,
+                'first_name': authorized_user.first_name,
+                'last_name': authorized_user.last_name,
+                'studio_id': session_user.user_id
+            }
+            send_invitation_email(invite_data)
 
             result = AuthorizedUsersSchema().dumps(authorized_user)
             response = json.loads(result)

@@ -78,6 +78,8 @@ class CreateUploadingPlatformResource(Resource):
                 service=data['service'],
                 image=data['image'],
                 service_email=data['service_email'],
+                channel_id=None,
+                channel_name=None,
                 refresh_token=data['refresh_token'],
                 active=False,
                 user_id=session_user.id,

@@ -37,8 +37,8 @@ class UpdateProfileResource(Resource):
         parser.add_argument('email', required=True, help='Email required!')
         roles = ("Admin", "User")
         parser.add_argument('role', choices=roles, required=True, help='Invalid role!')
-        parser.add_argument('first_name')
-        parser.add_argument('last_name')
+        parser.add_argument('name')
+        parser.add_argument('user_id')
         parser.add_argument('phone_number')
         data = parser.parse_args()
 
@@ -50,8 +50,8 @@ class UpdateProfileResource(Resource):
             if user is None:
                 return APIResponse.error_404("User not found!")
 
-            user.first_name = data['first_name']
-            user.last_name = data['last_name']
+            user.name = data['name']
+            user.user_id = data['user_id']
             user.role = UserRole.role(data['role'])
             user.phone_number = data['phone_number']
 

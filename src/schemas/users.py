@@ -13,8 +13,8 @@ class UserSchema(ma.Schema):
             'id',
             'email',
             'role',
-            'first_name',
-            'last_name',
+            'name',
+            'user_id',
             'phone_number',
             'verified'
         )
