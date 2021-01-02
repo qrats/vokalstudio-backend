@@ -52,6 +52,15 @@ def video_processor(episode):
         if platform is not None:
             upload_to_youtube(video_path, platform.refresh_token, episode.title, episode.description)
 
+        """ Upload on podbean if active """
+        platform = UploadingPlatformsModel.filter_first([
+            UploadingPlatformsModel.service == 'PodBean',
+            UploadingPlatformsModel.user_id == episode.uploader_id,
+            UploadingPlatformsModel.active == True
+        ])
+        if platform is not None:
+            upload_to_podbean(episode.url, episode.image, platform.refresh_token, episode.title, episode.description)
+
         os.remove(video_path)
         os.remove(audio_path)
 
@@ -77,6 +86,15 @@ def audio_processor(episode):
         print(f"Length: {length}")
         episode.length = datetime.strptime(length, '%H:%M:%S').time()
         episode.save()
+
+        """ Upload on podbean if active """
+        platform = UploadingPlatformsModel.filter_first([
+            UploadingPlatformsModel.service == 'PodBean',
+            UploadingPlatformsModel.user_id == episode.uploader_id,
+            UploadingPlatformsModel.active == True
+        ])
+        if platform is not None:
+            upload_to_podbean(episode.url, episode.image, platform.refresh_token, episode.title, episode.description)
 
         os.remove(audio_path)
         print(f"End: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -109,3 +127,32 @@ def upload_to_youtube(video_path, refresh_token, title, description):
         media_body=MediaFileUpload(video_path, chunksize=-1, resumable=True)
     ).execute()
     print(response)
+
+
+def upload_to_podbean(audio_url, image_url, refresh_token, title, description):
+    try:
+        auth = (app.config['PODBEAN_CLIENT_ID'], app.config['PODBEAN_CLIENT_SECRET'])
+        url = 'https://api.podbean.com/v1/oauth/token'
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+
+        r = requests.post(url, auth=auth, data=data)
+        token = json.loads(r.content)
+
+        url = 'https://api.podbean.com/v1/episodes'
+        data = {
+            'access_token': token['access_token'],
+            'title': title,
+            'content': description,
+            'status': 'publish',
+            'type': 'public',
+            'remote_media_url': audio_url
+        }
+        if image_url is not None:
+            url['logo_key'] = image_url
+        r = requests.post(url, auth=auth, data=data)
+        print(r.content)
+    except Exception as e:
+        print(e)
