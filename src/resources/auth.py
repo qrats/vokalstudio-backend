@@ -31,7 +31,7 @@ class SignUpResource(Resource):
                 UserModel.user_id == data['user_id']
             ])
             if user is not None:
-                return APIResponse.error_409("User ID already taken!")
+                return APIResponse.error_409("User already exist with the same or similar name!")
 
             user = UserModel.get_first([
                 UserModel.email == data['email']

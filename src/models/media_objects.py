@@ -14,7 +14,7 @@ class MediaObjectsModel(db.Model):
     url = db.Column(db.String(1024), nullable=True)
     image = db.Column(db.String(1024), nullable=True)
     type = db.Column(db.String(256), nullable=True, default='video')  # [video, audio]
-    length = db.Column(db.Integer, nullable=True, default=0)
+    length = db.Column(db.Time, nullable=True, default=None)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
