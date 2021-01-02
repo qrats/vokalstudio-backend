@@ -10,6 +10,7 @@ from src.models.episodes import EpisodesModel
 from src.schemas.episodes import EpisodesSchema
 
 from src.utils.api_response import APIResponse
+from src.tasks.episode_worker import video_processor, audio_processor
 
 
 class GetEpisodeResource(Resource):
@@ -84,6 +85,11 @@ class CreateEpisodesResource(Resource):
             )
             episode.save()
 
+            if episode.url.endswith('.mp3'):
+                audio_processor(episode)
+            else:
+                video_processor(episode)
+
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)
             return make_response(response, 201)
@@ -125,6 +131,11 @@ class UpdateEpisodesResource(Resource):
             episode.status = data['status']
             episode.premium = True if data['premium'].lower() == 'true' else False
             episode.save()
+
+            if episode.url.endswith('.mp3'):
+                audio_processor(episode)
+            else:
+                video_processor(episode)
 
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)

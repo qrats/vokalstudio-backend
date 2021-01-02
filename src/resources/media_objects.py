@@ -10,6 +10,7 @@ from src.models.media_objects import MediaObjectsModel
 from src.schemas.meida_objects import MediaObjectsSchema
 
 from src.utils.api_response import APIResponse
+from src.tasks.media_worker import media_processor
 
 
 class GetMediaObjectResource(Resource):
@@ -76,12 +77,14 @@ class CreateMediaObjectResource(Resource):
                 url=data['url'],
                 type=data['type'],
                 image=data['image'],
-                length=0,
                 uploader_id=session_user.id,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
             media_object.save()
+
+            if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+                media_processor(media_object)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -117,6 +120,9 @@ class UpdateMediaObjectResource(Resource):
             media_object.updated_at = datetime.utcnow()
 
             media_object.save()
+
+            if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+                media_processor(media_object)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)

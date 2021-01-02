@@ -7,7 +7,7 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required
 
 from src.utils.api_response import APIResponse
-from src.utils.s3upload import create_signed_post_data
+from src.utils.s3 import create_signed_post_data
 
 
 class S3SignedDataResource(Resource):
