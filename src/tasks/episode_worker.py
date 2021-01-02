@@ -28,7 +28,7 @@ def video_processor(episode):
         download_file(video_bucket, video_key, video_path)
 
         """ Get and Update length """
-        a = str(subprocess.check_output('/usr/bin/ffprobe -i  "' + video_path + '" 2>&1 |grep "Duration"', shell=True))
+        a = str(subprocess.check_output('/usr/bin/ffprobe -i  "' + video_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
         a = a.split(",")[0].split("Duration:")[1].strip()
         length = a.split('.')[0]
         print(f"Length: {length}")
@@ -71,7 +71,7 @@ def audio_processor(episode):
         download_file(audio_bucket, audio_key, audio_path)
 
         """ Get and Update length """
-        a = str(subprocess.check_output('/tmp/bin/ffprobe -i  "' + audio_path + '" 2>&1 |grep "Duration"', shell=True))
+        a = str(subprocess.check_output('/usr/bin/ffprobe -i  "' + audio_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
         a = a.split(",")[0].split("Duration:")[1].strip()
         length = a.split('.')[0]
         print(f"Length: {length}")
