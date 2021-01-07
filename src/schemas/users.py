@@ -15,6 +15,7 @@ class UserSchema(ma.Schema):
             'role',
             'name',
             'user_id',
+            'image',
             'phone_number',
             'verified'
         )

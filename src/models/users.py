@@ -32,6 +32,7 @@ class UserModel(db.Model):
     user_id = db.Column(db.String(256), nullable=True)
     name = db.Column(db.String(256), nullable=True)
     phone_number = db.Column(db.String(256), nullable=True)
+    image = db.Column(db.String(1024), nullable=True)
     verified = db.Column(db.Boolean, nullable=False, default=False)
     verified_at = db.Column(db.DateTime, nullable=True)
     active = db.Column(db.Boolean, nullable=False, default=True)

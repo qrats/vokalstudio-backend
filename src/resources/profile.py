@@ -1,13 +1,19 @@
+import os
 import json
+import uuid
+import base64
 from flask import make_response, jsonify
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import current_app as app
+from werkzeug.datastructures import FileStorage
 
 from src.models.users import UserModel, UserRole
 from src.schemas.users import UserSchema
 
 from src.utils.api_response import APIResponse
 from src.utils.hash import generate_hash, verify_hash
+from src.utils.s3 import upload_file
 
 
 class GetProfileResource(Resource):
@@ -127,6 +133,39 @@ class CloseProfileResource(Resource):
             else:
                 return APIResponse.error_403("Already deactivated!")
 
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
+
+
+class ProfileImageResource(Resource):
+    @jwt_required
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('user_id', required=True, help='User id required!')
+        parser.add_argument('image', required=True, help='Files required!')
+        data = parser.parse_args()
+
+        image_data = data['image'].replace('data:image/png;base64,', '')
+        try:
+            uuid_filename = f"{data['user_id']}-{str(uuid.uuid4().hex)}.png"
+            file_path = os.path.join(app.config['TMP_UPLOAD_PATH'], uuid_filename)
+
+            with open(file_path, "wb") as fh:
+                fh.write(base64.decodebytes(image_data.encode()))
+                upload_file(file_path, 'virtualstudio-image', f'image/{uuid_filename}')
+                os.remove(file_path)
+
+                email = get_jwt_identity()
+                user = UserModel.get_first([
+                    UserModel.email == email
+                ])
+                user.image = app.config['CDN_HOST'] + f'/image/{uuid_filename}'
+                user.save()
+
+            result = UserSchema().dumps(user)
+            response = json.loads(result)
+            return APIResponse.success_200(response)
         except Exception as e:
             print(e)
             return APIResponse.error_500()
