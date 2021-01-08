@@ -22,7 +22,7 @@ class MediaObjectsModel(db.Model):
     uploader = db.relationship(UserModel, foreign_keys=uploader_id)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.id} ({self.file_name}), role: {self.url}>"
+        return f"<{self.__class__.__name__}: {self.id} ({self.file_name})>"
 
     def save(self):
         try:
