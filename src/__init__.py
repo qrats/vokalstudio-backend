@@ -76,13 +76,15 @@ def create_app(config_obj=None):
     api_router.add_resource(S3SignedDataResource, "/s3upload", methods=['POST', 'PUT'])
 
     from src.resources.authorized_users import GetAuthorizedUsersResource, GetAuthorizedUserResource, \
-        CreateAuthorizedUserResource, UpdateAuthorizedUserResource, DeleteAuthorizedUserResource, InviteAuthorizedUserResource
+        CreateAuthorizedUserResource, UpdateAuthorizedUserResource, DeleteAuthorizedUserResource, \
+        InviteAuthorizedUserResource, AuthorizeUserResource
     api_router.add_resource(CreateAuthorizedUserResource, "/authorized-users", methods=['POST'])
     api_router.add_resource(GetAuthorizedUsersResource, "/authorized-users", methods=['GET'])
     api_router.add_resource(GetAuthorizedUserResource, "/authorized-users/<id>", methods=['GET'])
     api_router.add_resource(UpdateAuthorizedUserResource, "/authorized-users/<id>", methods=['PUT'])
     api_router.add_resource(DeleteAuthorizedUserResource, "/authorized-users/<id>", methods=['DELETE'])
     api_router.add_resource(InviteAuthorizedUserResource, "/authorized-users/invite/<id>", methods=['GET'])
+    api_router.add_resource(AuthorizeUserResource, "/studio/authorize", methods=['POST'])
 
     from src.resources.media_objects import GetMediaObjectsResource, GetMediaObjectResource, \
         CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource, GetMediaURLsResource

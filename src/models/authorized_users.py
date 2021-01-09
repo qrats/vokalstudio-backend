@@ -11,6 +11,7 @@ class AuthorizedUsersModel(db.Model):
     first_name = db.Column(db.String(256), nullable=False)
     last_name = db.Column(db.String(256), nullable=False)
     email = db.Column(db.String(256), nullable=False)
+    password = db.Column(db.String(256), nullable=False)
 
     invited_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -19,7 +20,7 @@ class AuthorizedUsersModel(db.Model):
     inviter = db.relationship(UserModel, foreign_keys=invited_by)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.id} ({self.first_name} {self.last_name}), email: {self.email}>"
+        return f"<{self.__class__.__name__}: {self.id} ({self.first_name} {self.last_name})>"
 
     def save(self):
         try:

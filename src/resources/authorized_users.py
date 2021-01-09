@@ -61,6 +61,7 @@ class CreateAuthorizedUserResource(Resource):
         parser.add_argument('first_name', required=True, help='First name required!')
         parser.add_argument('last_name', required=True, help='Last name required!')
         parser.add_argument('email', required=True, help='Email required!')
+        parser.add_argument('password', required=True, help='Password required!')
         data = parser.parse_args()
 
         session_user = UserModel.get_first([
@@ -73,6 +74,7 @@ class CreateAuthorizedUserResource(Resource):
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 email=data['email'],
+                password=data['password'],
                 invited_by=session_user.id,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -94,6 +96,7 @@ class UpdateAuthorizedUserResource(Resource):
         parser.add_argument('first_name', required=True, help='First name required!')
         parser.add_argument('last_name', required=True, help='Last name required!')
         parser.add_argument('email', required=True, help='Email required!')
+        parser.add_argument('password', required=True, help='Password required!')
         data = parser.parse_args()
 
         try:
@@ -107,6 +110,7 @@ class UpdateAuthorizedUserResource(Resource):
             authorized_user.first_name = data['first_name']
             authorized_user.last_name = data['last_name']
             authorized_user.email = data['email']
+            authorized_user.password = data['password']
             authorized_user.updated_at = datetime.utcnow()
 
             authorized_user.save()
@@ -156,6 +160,7 @@ class InviteAuthorizedUserResource(Resource):
 
             invite_data = {
                 'email': authorized_user.email,
+                'password': authorized_user.password,
                 'first_name': authorized_user.first_name,
                 'last_name': authorized_user.last_name,
                 'studio_id': session_user.user_id
@@ -165,6 +170,36 @@ class InviteAuthorizedUserResource(Resource):
             result = AuthorizedUsersSchema().dumps(authorized_user)
             response = json.loads(result)
             return make_response(response, 201)
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
+
+
+class AuthorizeUserResource(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('studio_id', required=True, help='Studio id required!')
+        parser.add_argument('username', required=True, help='Username required!')
+        parser.add_argument('password', required=True, help='Password required!')
+        data = parser.parse_args()
+        try:
+
+            invited_user = UserModel.get_first([
+                UserModel.user_id == data['studio_id']
+            ])
+
+            if invited_user is None:
+                return APIResponse.error_401("Authorization failed!")
+
+            authorized_user = AuthorizedUsersModel.filter_first([
+                AuthorizedUsersModel.email == data['username'],
+                AuthorizedUsersModel.password == data['password'],
+                AuthorizedUsersModel.invited_by == invited_user.id
+            ])
+            if authorized_user is None:
+                return APIResponse.error_401("Authorization failed!")
+
+            return APIResponse.success_200("Authorization success!")
         except Exception as e:
             print(e)
             return APIResponse.error_500()
