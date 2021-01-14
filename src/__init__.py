@@ -87,13 +87,12 @@ def create_app(config_obj=None):
     api_router.add_resource(AuthorizeUserResource, "/studio/authorize", methods=['POST'])
 
     from src.resources.media_objects import GetMediaObjectsResource, GetMediaObjectResource, \
-        CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource, GetMediaURLsResource
+        CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource
     api_router.add_resource(CreateMediaObjectResource, "/media-objects", methods=['POST'])
     api_router.add_resource(GetMediaObjectsResource, "/media-objects", methods=['GET'])
     api_router.add_resource(GetMediaObjectResource, "/media-objects/<id>", methods=['GET'])
     api_router.add_resource(UpdateMediaObjectResource, "/media-objects/<id>", methods=['PUT'])
     api_router.add_resource(DeleteMediaObjectResource, "/media-objects/<id>", methods=['DELETE'])
-    api_router.add_resource(GetMediaURLsResource, "/media/urls", methods=['GET'])
 
     from src.resources.uploading_platforms import GetUploadingPlatformsResource, GetUploadingPlatformResource, \
         CreateUploadingPlatformResource, UpdateUploadingPlatformResource, DeleteUploadingPlatformResource
@@ -113,6 +112,17 @@ def create_app(config_obj=None):
 
     from src.resources.oauth_tokens import OAuthTokenResource
     api_router.add_resource(OAuthTokenResource, "/oauth-tokens", methods=['POST'])
+
+    from src.resources.media_configuration import CreateMediaConfigurationResource, UpdateMediaConfigurationResource, \
+        GetMediaConfigurationsResource, GetMediaConfigurationResource, DeleteMediaConfigurationResource, \
+        GetMediaURLsResource, LoadMediaConfigurationResource
+    api_router.add_resource(CreateMediaConfigurationResource, "/media-configuration", methods=['POST'])
+    api_router.add_resource(GetMediaConfigurationsResource, "/media-configuration", methods=['GET'])
+    api_router.add_resource(GetMediaConfigurationResource, "/media-configuration/<user_id>", methods=['GET'])
+    api_router.add_resource(UpdateMediaConfigurationResource, "/media-configuration/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteMediaConfigurationResource, "/media-configuration/<id>", methods=['DELETE'])
+    api_router.add_resource(GetMediaURLsResource, "/media/urls", methods=['GET'])
+    api_router.add_resource(LoadMediaConfigurationResource, "/media/configuration/<user_id>", methods=['GET'])
 
     api_router.register_routes()
 

@@ -150,23 +150,3 @@ class DeleteMediaObjectResource(Resource):
             print(e)
             return APIResponse.error_500()
 
-
-class GetMediaURLsResource(Resource):
-    def get(self):
-        try:
-            media_object_list = MediaObjectsModel.filter_all([])
-            media_objects = MediaObjectsSchema().dumps(media_object_list, many=True)
-
-            media_urls = []
-            for media_object in json.loads(media_objects):
-                item = {
-                    'url': media_object['url'],
-                    'name': media_object['uploader']['name']
-                }
-                media_urls.append(item)
-
-            response = jsonify(media_urls)
-            return make_response(response, 200)
-        except Exception as e:
-            print(e)
-            return APIResponse.error_500()

@@ -11,6 +11,7 @@ from src.schemas.authorized_users import AuthorizedUsersSchema
 
 from src.utils.api_response import APIResponse
 from src.utils.email import send_invitation_email
+from src.utils.hash import verify_hash
 
 
 class GetAuthorizedUserResource(Resource):
@@ -178,26 +179,35 @@ class InviteAuthorizedUserResource(Resource):
 class AuthorizeUserResource(Resource):
     def post(self):
         parser = reqparse.RequestParser()
+        parser.add_argument('role', required=True, help='Role required!')
         parser.add_argument('studio_id', required=True, help='Studio id required!')
         parser.add_argument('username', required=True, help='Username required!')
         parser.add_argument('password', required=True, help='Password required!')
         data = parser.parse_args()
+
         try:
+            if data['role'] == 'host':
+                user = UserModel.get_first([
+                    UserModel.email == data['email'],
+                    UserModel.user_id == data['studio_id'],
+                ])
+                if not verify_hash(data['password'], user.password):
+                    return APIResponse.error_401("Authorization failed!")
+            else:
+                invited_user = UserModel.get_first([
+                    UserModel.user_id == data['studio_id']
+                ])
 
-            invited_user = UserModel.get_first([
-                UserModel.user_id == data['studio_id']
-            ])
+                if invited_user is None:
+                    return APIResponse.error_401("Authorization failed!")
 
-            if invited_user is None:
-                return APIResponse.error_401("Authorization failed!")
-
-            authorized_user = AuthorizedUsersModel.filter_first([
-                AuthorizedUsersModel.email == data['username'],
-                AuthorizedUsersModel.password == data['password'],
-                AuthorizedUsersModel.invited_by == invited_user.id
-            ])
-            if authorized_user is None:
-                return APIResponse.error_401("Authorization failed!")
+                authorized_user = AuthorizedUsersModel.filter_first([
+                    AuthorizedUsersModel.email == data['username'],
+                    AuthorizedUsersModel.password == data['password'],
+                    AuthorizedUsersModel.invited_by == invited_user.id
+                ])
+                if authorized_user is None:
+                    return APIResponse.error_401("Authorization failed!")
 
             return APIResponse.success_200("Authorization success!")
         except Exception as e:
