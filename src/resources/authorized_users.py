@@ -188,10 +188,10 @@ class AuthorizeUserResource(Resource):
         try:
             if data['role'] == 'host':
                 user = UserModel.get_first([
-                    UserModel.email == data['email'],
+                    UserModel.email == data['username'],
                     UserModel.user_id == data['studio_id'],
                 ])
-                if not verify_hash(data['password'], user.password):
+                if user is None or not verify_hash(data['password'], user.password):
                     return APIResponse.error_401("Authorization failed!")
             else:
                 invited_user = UserModel.get_first([
