@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import subprocess
 from datetime import datetime
 from flask import make_response, jsonify
 from flask import current_app as app
@@ -14,7 +15,7 @@ from src.models.media_objects import MediaObjectsModel
 from src.schemas.meida_objects import MediaObjectsSchema
 
 from src.utils.api_response import APIResponse
-from src.tasks.media_worker import media_processor, media_uploader
+from src.tasks.media_worker import media_uploader
 
 
 class GetMediaObjectResource(Resource):
@@ -73,7 +74,6 @@ class CreateMediaObjectResource(Resource):
             UserModel.email == get_jwt_identity()
         ])
         try:
-
             media_object = MediaObjectsModel(
                 id=str(uuid.uuid4().hex),
                 file_name=data['file_name'],
@@ -85,11 +85,15 @@ class CreateMediaObjectResource(Resource):
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
+
+            if data['url'].split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+                a = str(subprocess.check_output(
+                    '/usr/bin/ffprobe -i  "' + data['url'] + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
+                a = a.split(",")[0].split("Duration:")[1].strip()
+                duration = a.split('.')[0]
+                media_object.duration = datetime.strptime(duration, '%H:%M:%S').time()
+
             media_object.save()
-
-            if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor.delay(media_object.url)
-
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
             return make_response(response, 201)
@@ -123,10 +127,14 @@ class UpdateMediaObjectResource(Resource):
             media_object.image = data['image']
             media_object.updated_at = datetime.utcnow()
 
-            media_object.save()
+            if data['url'].split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+                a = str(subprocess.check_output(
+                    '/usr/bin/ffprobe -i  "' + data['url'] + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
+                a = a.split(",")[0].split("Duration:")[1].strip()
+                duration = a.split('.')[0]
+                media_object.duration = datetime.strptime(duration, '%H:%M:%S').time()
 
-            if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor.delay(media_object.url)
+            media_object.save()
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -182,8 +190,16 @@ class UploadMediaObjectsResource(Resource):
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
-            media_object.save()
+
+            if data['url'].split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+                a = str(subprocess.check_output(
+                    '/usr/bin/ffprobe -i  "' + file_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
+                a = a.split(",")[0].split("Duration:")[1].strip()
+                duration = a.split('.')[0]
+                media_object.duration = datetime.strptime(duration, '%H:%M:%S').time()
+
             media_uploader.delay(media_object.url)
+            media_object.save()
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)

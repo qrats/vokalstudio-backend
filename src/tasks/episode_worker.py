@@ -14,10 +14,10 @@ from googleapiclient.http import MediaFileUpload
 
 
 @celery.task()
-def video_processor(url):
+def video_processor(episode_id, episode_url):
     try:
-        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
-        file_name = url.split('/')[-1]
+        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode_url}")
+        file_name = episode_url.split('/')[-1]
         extension = file_name.split('.')[-1]
         video_bucket = 'virtualstudio-video'
         audio_bucket = 'virtualstudio-audio'
@@ -27,18 +27,6 @@ def video_processor(url):
         audio_path = video_path.replace(f'.{extension}', '.mp3')
 
         download_file(video_bucket, video_key, video_path)
-
-        """ Get and Update length """
-        a = str(subprocess.check_output('/usr/bin/ffprobe -i  "' + video_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
-        a = a.split(",")[0].split("Duration:")[1].strip()
-        length = a.split('.')[0]
-        print(f"Length: {length}")
-
-        episode = EpisodesModel.filter_first([
-            EpisodesModel.url == url
-        ])
-        episode.length = datetime.strptime(length, '%H:%M:%S').time()
-        episode.save()
 
         """ Convert and Upload audio version """
         cmd = ["/usr/bin/ffmpeg", "-i", "{}".format(video_path), "-f", "mp3", "-ab", "192000", "-vn",
@@ -74,27 +62,15 @@ def video_processor(url):
         print(e)
 
 @celery.task()
-def audio_processor(url):
+def audio_processor(episode_id, episode_url):
     try:
-        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
-        file_name = url.split('/')[-1]
+        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode_url}")
+        file_name = episode_url.split('/')[-1]
         audio_path = f"/tmp/{file_name}"
         audio_bucket = 'virtualstudio-audio'
         audio_key = 'audio/' + file_name
 
         download_file(audio_bucket, audio_key, audio_path)
-
-        """ Get and Update length """
-        a = str(subprocess.check_output('/usr/bin/ffprobe -i  "' + audio_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
-        a = a.split(",")[0].split("Duration:")[1].strip()
-        length = a.split('.')[0]
-        print(f"Length: {length}")
-
-        episode = EpisodesModel.filter_first([
-            EpisodesModel.url == url
-        ])
-        episode.length = datetime.strptime(length, '%H:%M:%S').time()
-        episode.save()
 
         """ Upload on podbean if active """
         platform = UploadingPlatformsModel.filter_first([

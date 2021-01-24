@@ -16,7 +16,7 @@ class EpisodesModel(db.Model):
     type = db.Column(db.String(256), nullable=True, default='video')  # [video, audio]
     status = db.Column(db.String(256), nullable=True, default='pending')  # [live, pending]
     premium = db.Column(db.Boolean, nullable=True, default=False)
-    length = db.Column(db.Time, nullable=True, default=None)
+    duration = db.Column(db.Time, nullable=True, default=None)
     views = db.Column(db.Integer, nullable=True, default=0)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

@@ -1,5 +1,6 @@
 import uuid
 import json
+import subprocess
 from datetime import datetime
 from flask import make_response, jsonify
 from flask_restful import Resource, reqparse
@@ -70,6 +71,11 @@ class CreateEpisodesResource(Resource):
         data = parser.parse_args()
 
         try:
+            a = str(subprocess.check_output(
+                '/usr/bin/ffprobe -i  "' + data['url'] + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
+            a = a.split(",")[0].split("Duration:")[1].strip()
+            duration = a.split('.')[0]
+
             episode = EpisodesModel(
                 id=str(uuid.uuid4().hex),
                 uploader_id=data['uploader_id'],
@@ -79,6 +85,7 @@ class CreateEpisodesResource(Resource):
                 image=data['image'],
                 status=data['status'],
                 type=data['type'],
+                duration=datetime.strptime(duration, '%H:%M:%S').time(),
                 premium=True if data['premium'].lower() == 'true' else False,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -86,9 +93,9 @@ class CreateEpisodesResource(Resource):
             episode.save()
 
             if episode.url.endswith('.mp3'):
-                audio_processor.delay(episode.url)
+                audio_processor.delay(episode.id, episode.url)
             else:
-                video_processor.delay(episode.url)
+                video_processor.delay(episode.id, episode.url)
 
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)
@@ -121,7 +128,11 @@ class UpdateEpisodesResource(Resource):
                 return APIResponse.error_404()
 
             if episode.url != data['url']:
-                pass
+                a = str(subprocess.check_output(
+                    '/usr/bin/ffprobe -i  "' + data['url'] + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
+                a = a.split(",")[0].split("Duration:")[1].strip()
+                duration = a.split('.')[0]
+                episode.duration = datetime.strptime(duration, '%H:%M:%S').time()
 
             episode.title = data['title']
             episode.description = data['description']
