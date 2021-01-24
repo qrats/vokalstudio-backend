@@ -36,6 +36,10 @@ def video_processor(episode_id, episode_url):
         upload_file(audio_path, audio_bucket, audio_key)
 
         """ Upload on youtube if active """
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.id == episode_id
+        ])
+
         platform = UploadingPlatformsModel.filter_first([
             UploadingPlatformsModel.service == 'Youtube',
             UploadingPlatformsModel.user_id == episode.uploader_id,
@@ -73,6 +77,10 @@ def audio_processor(episode_id, episode_url):
         download_file(audio_bucket, audio_key, audio_path)
 
         """ Upload on podbean if active """
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.id == episode_id
+        ])
+
         platform = UploadingPlatformsModel.filter_first([
             UploadingPlatformsModel.service == 'PodBean',
             UploadingPlatformsModel.user_id == episode.uploader_id,

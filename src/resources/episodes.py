@@ -144,9 +144,9 @@ class UpdateEpisodesResource(Resource):
             episode.save()
 
             if episode.url.endswith('.mp3'):
-                audio_processor.delay(episode.url)
+                audio_processor.delay(episode.id, episode.url)
             else:
-                video_processor.delay(episode.url)
+                video_processor.delay(episode.id, episode.url)
 
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)
