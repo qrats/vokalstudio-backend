@@ -32,8 +32,8 @@ def session_clear(exception=None):
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Origin, Authorization, X-Requested-With')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Cache-Control, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE, OPTIONS')
     return response
 
 
