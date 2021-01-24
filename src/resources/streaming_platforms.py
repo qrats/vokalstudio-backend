@@ -88,7 +88,7 @@ class CreateStreamingPlatformResource(Resource):
                     "client_secret": app.config['GOOGLE_CLIENT_SECRET'],
                 }
                 credentials = Credentials.from_authorized_user_info(info)
-                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials, cache_discovery=False)
 
                 request = youtube.liveBroadcasts().insert(
                     part="snippet,contentDetails,status",
@@ -280,7 +280,7 @@ class UpdateStreamingPlatformResource(Resource):
                     "client_secret": app.config['GOOGLE_CLIENT_SECRET'],
                 }
                 credentials = Credentials.from_authorized_user_info(info)
-                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+                youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials, cache_discovery=False)
 
                 request = youtube.liveBroadcasts().update(
                     part="id, snippet",

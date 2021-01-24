@@ -118,7 +118,7 @@ def upload_to_youtube(video_path, refresh_token, title, description):
         "client_id": app.config['GOOGLE_CLIENT_ID'],
         "client_secret": app.config['GOOGLE_CLIENT_SECRET'],
     })
-    youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+    youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials, cache_discovery=False)
 
     body = dict(
         snippet=dict(
