@@ -14,14 +14,10 @@ from googleapiclient.http import MediaFileUpload
 
 
 @celery.task()
-def video_processor(episode_id):
+def video_processor(url):
     try:
-        episode = EpisodesModel.filter_first([
-            EpisodesModel.id == episode_id
-        ])
-
-        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode.url}")
-        file_name = episode.url.split('/')[-1]
+        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
+        file_name = url.split('/')[-1]
         extension = file_name.split('.')[-1]
         video_bucket = 'virtualstudio-video'
         audio_bucket = 'virtualstudio-audio'
@@ -37,6 +33,10 @@ def video_processor(episode_id):
         a = a.split(",")[0].split("Duration:")[1].strip()
         length = a.split('.')[0]
         print(f"Length: {length}")
+
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.url == url
+        ])
         episode.length = datetime.strptime(length, '%H:%M:%S').time()
         episode.save()
 
@@ -74,14 +74,10 @@ def video_processor(episode_id):
         print(e)
 
 @celery.task()
-def audio_processor(episode_id):
+def audio_processor(url):
     try:
-        episode = EpisodesModel.filter_first([
-            EpisodesModel.id == episode_id
-        ])
-
-        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode.url}")
-        file_name = episode.url.split('/')[-1]
+        print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
+        file_name = url.split('/')[-1]
         audio_path = f"/tmp/{file_name}"
         audio_bucket = 'virtualstudio-audio'
         audio_key = 'audio/' + file_name
@@ -93,6 +89,10 @@ def audio_processor(episode_id):
         a = a.split(",")[0].split("Duration:")[1].strip()
         length = a.split('.')[0]
         print(f"Length: {length}")
+
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.url == url
+        ])
         episode.length = datetime.strptime(length, '%H:%M:%S').time()
         episode.save()
 

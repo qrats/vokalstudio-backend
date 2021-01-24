@@ -1,3 +1,4 @@
+import logging
 import config
 from celery import Celery
 from src import create_app
@@ -12,6 +13,7 @@ app = create_app(config.DevelopmentConfig)
 app.app_context().push()
 
 celery.conf.update(app.config)
+logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 
 
 @app.route("/")

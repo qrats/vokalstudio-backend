@@ -88,7 +88,7 @@ class CreateMediaObjectResource(Resource):
             media_object.save()
 
             if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor.delay(media_object.id)
+                media_processor.delay(media_object.url)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -121,12 +121,12 @@ class UpdateMediaObjectResource(Resource):
             media_object.url = data['url']
             media_object.type = data['type']
             media_object.image = data['image']
-            media_object.updated_at = datetmedia_idime.utcnow()
+            media_object.updated_at = datetime.utcnow()
 
             media_object.save()
 
             if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor.delay(media_object.id)
+                media_processor.delay(media_object.url)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -183,7 +183,7 @@ class UploadMediaObjectsResource(Resource):
                 updated_at=datetime.utcnow(),
             )
             media_object.save()
-            media_uploader.delay(media_object.id)
+            media_uploader.delay(media_object.url)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)

@@ -21,14 +21,10 @@ def get_length(media_path):
 
 
 @celery.task()
-def media_processor(media_id):
+def media_processor(url):
     try:
-        media = MediaObjectsModel.filter_first([
-            MediaObjectsModel.id == media_id
-        ])
-
-        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {media.url}")
-        file_name = media.url.split('/')[-1]
+        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
+        file_name = url.split('/')[-1]
         media_path = f"/tmp/{file_name}"
 
         if file_name.endswith('.mp3'):
@@ -39,6 +35,10 @@ def media_processor(media_id):
             media_key = 'video/' + file_name
 
         download_file(media_bucket, media_key, media_path)
+
+        media = MediaObjectsModel.filter_first([
+            MediaObjectsModel.url == url
+        ])
         media.length = get_length(media_path)
         media.save()
 
@@ -49,21 +49,28 @@ def media_processor(media_id):
 
 
 @celery.task()
-def media_uploader(media_id):
+def media_uploader(url):
     try:
-        media = MediaObjectsModel.filter_first([
-            MediaObjectsModel.id == media_id
-        ])
+        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {url}")
+        file_name = url.split('/')[-1]
+        extension = file_name.split('.')[-1]
 
-        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {media.url}")
-        file_name = media.url.split('/')[-1]
+        if extension in ['mp3']:
+            file_type = 'audio'
+        elif extension in ['mp4', 'mkv', 'mov', 'flv']:
+            file_type = 'video'
+        else:
+            file_type = 'image'
 
         media_path = f"/tmp/{file_name}"
-        media_bucket = f"virtualstudio-{media.type}"
-        media_key = f"{media.type}/{file_name}"
+        media_bucket = f"virtualstudio-{file_type}"
+        media_key = f"{file_type}/{file_name}"
 
         upload_file(media_path, media_bucket, media_key)
-        if media.type != "image":
+        if file_type != "image":
+            media = MediaObjectsModel.filter_first([
+                MediaObjectsModel.url == url
+            ])
             media.length = get_length(media_path)
             media.save()
 
