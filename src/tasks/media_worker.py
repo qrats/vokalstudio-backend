@@ -5,10 +5,10 @@ from src.utils.s3 import upload_file
 
 
 @celery.task()
-def media_uploader(media_url):
+def media_uploader(file_path):
     try:
-        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {media_url}")
-        file_name = media_url.split('/')[-1]
+        print(f"Start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {file_path}")
+        file_name = file_path.split('/')[-1]
         extension = file_name.split('.')[-1]
 
         if extension in ['mp3']:

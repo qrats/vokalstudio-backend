@@ -191,14 +191,14 @@ class UploadMediaObjectsResource(Resource):
                 updated_at=datetime.utcnow(),
             )
 
-            if data['url'].split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
+            if file_name.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
                 a = str(subprocess.check_output(
                     '/usr/bin/ffprobe -i  "' + file_path + '" 2>&1 | /usr/bin/grep "Duration"', shell=True))
                 a = a.split(",")[0].split("Duration:")[1].strip()
                 duration = a.split('.')[0]
                 media_object.duration = datetime.strptime(duration, '%H:%M:%S').time()
 
-            media_uploader.delay(media_object.url)
+            media_uploader.delay(file_path)
             media_object.save()
 
             result = MediaObjectsSchema().dumps(media_object)
