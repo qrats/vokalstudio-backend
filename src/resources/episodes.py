@@ -86,9 +86,9 @@ class CreateEpisodesResource(Resource):
             episode.save()
 
             if episode.url.endswith('.mp3'):
-                audio_processor(episode)
+                audio_processor.delay(episode.id)
             else:
-                video_processor(episode)
+                video_processor.delay(episode.id)
 
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)
@@ -133,9 +133,9 @@ class UpdateEpisodesResource(Resource):
             episode.save()
 
             if episode.url.endswith('.mp3'):
-                audio_processor(episode)
+                audio_processor.delay(episode.id)
             else:
-                video_processor(episode)
+                video_processor.delay(episode.id)
 
             result = EpisodesSchema().dumps(episode)
             response = json.loads(result)

@@ -87,12 +87,13 @@ def create_app(config_obj=None):
     api_router.add_resource(AuthorizeUserResource, "/studio/authorize", methods=['POST'])
 
     from src.resources.media_objects import GetMediaObjectsResource, GetMediaObjectResource, \
-        CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource
+        CreateMediaObjectResource, UpdateMediaObjectResource, DeleteMediaObjectResource, UploadMediaObjectsResource
     api_router.add_resource(CreateMediaObjectResource, "/media-objects", methods=['POST'])
     api_router.add_resource(GetMediaObjectsResource, "/media-objects", methods=['GET'])
     api_router.add_resource(GetMediaObjectResource, "/media-objects/<id>", methods=['GET'])
     api_router.add_resource(UpdateMediaObjectResource, "/media-objects/<id>", methods=['PUT'])
     api_router.add_resource(DeleteMediaObjectResource, "/media-objects/<id>", methods=['DELETE'])
+    api_router.add_resource(UploadMediaObjectsResource, "/media-objects/bulk-upload", methods=['POST'])
 
     from src.resources.uploading_platforms import GetUploadingPlatformsResource, GetUploadingPlatformResource, \
         CreateUploadingPlatformResource, UpdateUploadingPlatformResource, DeleteUploadingPlatformResource

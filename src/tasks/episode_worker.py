@@ -3,6 +3,7 @@ from datetime import datetime
 import subprocess
 from app import celery
 from src.utils.s3 import download_file, upload_file
+from src.models.episodes import EpisodesModel
 from src.models.uploading_platforms import UploadingPlatformsModel
 from flask import current_app as app
 
@@ -13,8 +14,12 @@ from googleapiclient.http import MediaFileUpload
 
 
 @celery.task()
-def video_processor(episode):
+def video_processor(episode_id):
     try:
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.id == episode_id
+        ])
+
         print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode.url}")
         file_name = episode.url.split('/')[-1]
         extension = file_name.split('.')[-1]
@@ -68,9 +73,13 @@ def video_processor(episode):
     except Exception as e:
         print(e)
 
-
-def audio_processor(episode):
+@celery.task()
+def audio_processor(episode_id):
     try:
+        episode = EpisodesModel.filter_first([
+            EpisodesModel.id == episode_id
+        ])
+
         print(f"start: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}, {episode.url}")
         file_name = episode.url.split('/')[-1]
         audio_path = f"/tmp/{file_name}"

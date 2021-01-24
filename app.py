@@ -9,6 +9,7 @@ celery = Celery(
 )
 
 app = create_app(config.DevelopmentConfig)
+app.app_context().push()
 
 celery.conf.update(app.config)
 

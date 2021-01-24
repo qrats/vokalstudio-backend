@@ -1,16 +1,20 @@
+import os
 import uuid
 import json
 from datetime import datetime
 from flask import make_response, jsonify
+from flask import current_app as app
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.datastructures import FileStorage
+
 from src.models.users import UserModel, UserRole
 from src.models.media_objects import MediaObjectsModel
 
 from src.schemas.meida_objects import MediaObjectsSchema
 
 from src.utils.api_response import APIResponse
-from src.tasks.media_worker import media_processor
+from src.tasks.media_worker import media_processor, media_uploader
 
 
 class GetMediaObjectResource(Resource):
@@ -84,7 +88,7 @@ class CreateMediaObjectResource(Resource):
             media_object.save()
 
             if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor(media_object)
+                media_processor.delay(media_object.id)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -117,12 +121,12 @@ class UpdateMediaObjectResource(Resource):
             media_object.url = data['url']
             media_object.type = data['type']
             media_object.image = data['image']
-            media_object.updated_at = datetime.utcnow()
+            media_object.updated_at = datetmedia_idime.utcnow()
 
             media_object.save()
 
             if media_object.url.split('.')[-1] in ['mp3', 'mp4', 'mov', 'mkv', 'flv']:
-                media_processor(media_object)
+                media_processor.delay(media_object.id)
 
             result = MediaObjectsSchema().dumps(media_object)
             response = json.loads(result)
@@ -150,3 +154,40 @@ class DeleteMediaObjectResource(Resource):
             print(e)
             return APIResponse.error_500()
 
+
+class UploadMediaObjectsResource(Resource):
+    @jwt_required
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('category', required=True, help='Category required!')
+        parser.add_argument('file', location='files', type=FileStorage, help='Files required!')
+        data = parser.parse_args()
+
+        file = data['file']
+        file_name = file.filename
+        try:
+            file_path = os.path.join('/tmp', file_name)
+            file.save(file_path)
+
+            session_user = UserModel.get_first([
+                UserModel.email == get_jwt_identity()
+            ])
+
+            media_object = MediaObjectsModel(
+                id=str(uuid.uuid4().hex),
+                file_name=file_name,
+                url=f"{app.config['CDN_HOST']}/{data['category']}/{file_name}",
+                type=data['category'],
+                uploader_id=session_user.id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            media_object.save()
+            media_uploader.delay(media_object.id)
+
+            result = MediaObjectsSchema().dumps(media_object)
+            response = json.loads(result)
+            return make_response(response, 201)
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
