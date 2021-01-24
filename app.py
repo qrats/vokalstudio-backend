@@ -2,6 +2,7 @@ import logging
 import config
 from celery import Celery
 from src import create_app
+from src.services.db import db
 
 celery = Celery(
     __name__,
@@ -19,6 +20,21 @@ logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 @app.route("/")
 def health_check():
     return {"message": "API server is live!"}
+
+
+@app.teardown_request
+def session_clear(exception=None):
+    db.session.remove()
+    if exception and db.session.is_active:
+        db.session.rollback()
+
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Cache-Control, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE, OPTIONS')
+    return response
 
 
 @app.shell_context_processor
