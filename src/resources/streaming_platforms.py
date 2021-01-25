@@ -436,6 +436,10 @@ class GetConnectedRTMPLinksResource(Resource):
                     'channel_id': streaming_platform.channel_id,
                     'channel_name': streaming_platform.channel_name
                 }
+
+                if item['service'] == "Twitch":
+                    item['rtmp_address'] = f"rtmp://{item['rtmp_address']}"
+
                 streaming_platforms.append(item)
 
             response = jsonify(streaming_platforms)
