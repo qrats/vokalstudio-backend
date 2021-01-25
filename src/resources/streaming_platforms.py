@@ -70,6 +70,8 @@ class CreateStreamingPlatformResource(Resource):
         parser.add_argument('active', required=True, type=bool, help='Active required!')
         parser.add_argument('title', required=True, help='Title required!')
         parser.add_argument('description', required=True, help='Description required!')
+        parser.add_argument('custom_rtmp', type=bool, help='Active required!')
+        parser.add_argument('rtmp_address')
         parser.add_argument('frame_rate')
         parser.add_argument('resolution')
         parser.add_argument('game_id')
@@ -80,8 +82,16 @@ class CreateStreamingPlatformResource(Resource):
         session_user = UserModel.get_first([
             UserModel.email == get_jwt_identity()
         ])
+
         try:
-            if data['service'] == 'Youtube':
+            channel_id = session_user.email
+            channel_name = session_user.name
+            extra = {}
+
+            if data['service'] == 'VokalNow':
+                stream_key = session_user.user_id
+                ingestion_address = 'rtmp://stream.vokalcdn.com'
+            elif data['service'] == 'Youtube':
                 info = {
                     'refresh_token': data['refresh_token'],
                     "client_id": app.config['GOOGLE_CLIENT_ID'],
@@ -273,7 +283,9 @@ class UpdateStreamingPlatformResource(Resource):
             if streaming_platform is None:
                 return APIResponse.error_404('Streaming platform not found')
 
-            if data['service'] == 'Youtube':
+            if data['service'] == 'VokalNow':
+                pass
+            elif data['service'] == 'Youtube':
                 info = {
                     'refresh_token': streaming_platform.refresh_token,
                     "client_id": app.config['GOOGLE_CLIENT_ID'],
@@ -351,6 +363,10 @@ class UpdateStreamingPlatformResource(Resource):
                     "title": data['title'],
                     "broadcaster_language": "en"
                 }
+                if data['game_id'] != streaming_platform.extra['game_id']:
+                    streaming_platform.extra['game_id'] = data['game_id']
+                    payload['game_id'] = data['game_id']
+
                 r = requests.patch(url, data=payload, headers=headers)
                 if r.status_code != 204:
                     return APIResponse.error_500("Failed to update channel")
