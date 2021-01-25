@@ -104,12 +104,14 @@ def create_app(config_obj=None):
     api_router.add_resource(DeleteUploadingPlatformResource, "/uploading-platforms/<id>", methods=['DELETE'])
 
     from src.resources.streaming_platforms import GetStreamingPlatformsResource, GetStreamingPlatformResource, \
-        CreateStreamingPlatformResource, UpdateStreamingPlatformResource, DeleteStreamingPlatformResource
+        CreateStreamingPlatformResource, UpdateStreamingPlatformResource, DeleteStreamingPlatformResource, \
+        GetConnectedRTMPLinksResource
     api_router.add_resource(CreateStreamingPlatformResource, "/streaming-platforms", methods=['POST'])
     api_router.add_resource(GetStreamingPlatformsResource, "/streaming-platforms", methods=['GET'])
     api_router.add_resource(GetStreamingPlatformResource, "/streaming-platforms/<id>", methods=['GET'])
     api_router.add_resource(UpdateStreamingPlatformResource, "/streaming-platforms/<id>", methods=['PUT'])
     api_router.add_resource(DeleteStreamingPlatformResource, "/streaming-platforms/<id>", methods=['DELETE'])
+    api_router.add_resource(GetConnectedRTMPLinksResource, "/rtmp-links/<user_id>", methods=['GET'])
 
     from src.resources.oauth_tokens import OAuthTokenResource
     api_router.add_resource(OAuthTokenResource, "/oauth-tokens", methods=['POST'])

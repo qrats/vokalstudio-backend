@@ -415,3 +415,31 @@ class DeleteStreamingPlatformResource(Resource):
         except Exception as e:
             print(e)
             return APIResponse.error_500()
+
+
+class GetConnectedRTMPLinksResource(Resource):
+    def get(self, user_id):
+        try:
+            session_user = UserModel.get_first([
+                UserModel.user_id == user_id
+            ])
+
+            streaming_platform_list = StreamingPlatformsModel.filter_all([
+                StreamingPlatformsModel.user_id == session_user.id
+            ])
+
+            streaming_platforms = []
+            for streaming_platform in streaming_platform_list:
+                item = {
+                    'service': streaming_platform.service,
+                    'rtmp_address': f"{streaming_platform.ingestion_address}/{streaming_platform.stream_key}",
+                    'channel_id': streaming_platform.channel_id,
+                    'channel_name': streaming_platform.channel_name
+                }
+                streaming_platforms.append(item)
+
+            response = jsonify(streaming_platforms)
+            return make_response(response, 200)
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
