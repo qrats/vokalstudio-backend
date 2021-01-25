@@ -16,7 +16,7 @@ def create_app(config_obj=None):
 
     # CORS allow
     from flask_cors import CORS
-    cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+    cors = CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": "*", "expose_headers": "*"}})
 
     # DB service
     from src.services.db import db

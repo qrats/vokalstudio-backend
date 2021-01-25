@@ -14,6 +14,7 @@ class DevelopmentConfig(object):
         load_dotenv(dotenv_path)
 
     SYS_CONFIG_DIR = os.getenv('SYS_CONFIG_DIR')
+    CORS_HEADERS = 'Content-Type'
 
     """Application configuration"""
     SECRET_KEY = os.getenv('SECRET_KEY')
