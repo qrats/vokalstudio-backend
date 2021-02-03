@@ -44,6 +44,11 @@ class DevelopmentConfig(object):
     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 
+    """Paypal Configuration"""
+    PAYPAL_MODE = os.getenv('PAYPAL_MODE')
+    PAYPAL_ACCOUNT = os.getenv('PAYPAL_ACCOUNT')
+    PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
+    PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
 
     """Tmp path"""
     TMP_UPLOAD_PATH = "/tmp/upload/"

@@ -60,3 +60,86 @@ def check_if_token_in_blacklist(decrypted_token):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+@app.cli.command('create_products')
+def cmd_create_product():
+    from datetime import datetime
+    from src.models.products import ProductsModel
+    from src.utils.paypal.product import Product
+    product = Product(
+        name="PRO",
+        description="Include all features across Producer, Syndication and Virtual Studio.",
+    )
+    prod = product.create()
+
+    p = product.details(prod['id'])
+
+    new_product = ProductsModel(
+        sandbox=False,
+        id=p['id'],
+        name=p['name'],
+        description=p['description'],
+        type=p['type'],
+        category=p['category'],
+        links=p['links'],
+        create_time=datetime.strptime(p['create_time'], '%Y-%m-%dT%H:%M:%SZ'),
+        update_time=datetime.strptime(p['update_time'], '%Y-%m-%dT%H:%M:%SZ')
+    )
+
+    if 'image_url' in p:
+        new_product.image_url = p['image_url']
+
+    if 'home_url' in p:
+        new_product.home_url = p['home_url']
+
+    new_product.save()
+
+
+@app.cli.command('create_plans')
+def cmd_create_plans():
+    from datetime import datetime
+    from src.models.plans import PlansModel
+    from src.utils.paypal.plan import Plan
+
+    plan = Plan(
+        product_id='PROD-9LB36648893007432',
+        name="PRO",
+        description="Include all features across Producer, Syndication and Virtual Studio.",
+        price=99.00
+    )
+    pln = plan.create()
+
+    p = plan.details(pln['id'])
+
+    new_plan = PlansModel(
+        sandbox=False,
+        id=p['id'],
+        name=p['name'],
+        description=p['description'],
+        product_id=p['product_id'],
+        status=p['status'],
+        billing_cycles=plan.billing_cycles,
+        payment_preferences=plan.payment_preferences,
+        taxes=plan.taxes,
+        links=p['links'],
+        quantity_supported=False,
+        create_time=datetime.strptime(p['create_time'], '%Y-%m-%dT%H:%M:%SZ'),
+        update_time=datetime.strptime(p['update_time'], '%Y-%m-%dT%H:%M:%SZ')
+    )
+    new_plan.save()
+
+
+@app.cli.command('create_subscription')
+def cmd_create_subscription():
+    from datetime import datetime
+    from src.utils.paypal.subscription import Subscription
+
+    sub = Subscription(
+        plan_id='P-47S70783128454237MALV32I'
+    )
+
+    # s = sub.create()
+
+    p = sub.details('I-YK3SWC2YXKYA')
+    print(p)

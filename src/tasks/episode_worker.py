@@ -35,7 +35,7 @@ def video_processor(episode_id, episode_url):
 
         upload_file(audio_path, audio_bucket, audio_key)
 
-        """ Upload on youtube if active """
+        """ Upload on services if active """
         episode = EpisodesModel.filter_first([
             EpisodesModel.id == episode_id
         ])

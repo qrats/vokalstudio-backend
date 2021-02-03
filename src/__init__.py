@@ -16,7 +16,7 @@ def create_app(config_obj=None):
 
     # CORS allow
     from flask_cors import CORS
-    cors = CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": "*", "expose_headers": "*"}})
+    cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # DB service
     from src.services.db import db
@@ -126,6 +126,21 @@ def create_app(config_obj=None):
     api_router.add_resource(DeleteMediaConfigurationResource, "/media-configuration/<id>", methods=['DELETE'])
     api_router.add_resource(GetMediaURLsResource, "/media/urls", methods=['GET'])
     api_router.add_resource(LoadMediaConfigurationResource, "/media/configuration/<user_id>", methods=['GET'])
+
+    from src.resources.subscriptions import GetSubscriptionsResource, CreateSubscriptionResource, \
+        UpdateSubscriptionResource, CancelSubscriptionResource, ActivateSubscriptionResource
+    api_router.add_resource(GetSubscriptionsResource, "/subscriptions", methods=['GET'])
+    api_router.add_resource(CreateSubscriptionResource, "/subscriptions", methods=['POST'])
+    api_router.add_resource(UpdateSubscriptionResource, "/subscriptions/<id>", methods=['PUT'])
+    api_router.add_resource(CancelSubscriptionResource, "/subscriptions/cancel/<id>", methods=['GET'])
+    api_router.add_resource(ActivateSubscriptionResource, "/subscriptions/activate/<id>", methods=['GET'])
+
+    from src.resources.payments import GetPaymentResource, GetPaymentsResource
+    api_router.add_resource(GetPaymentResource, "/payments/<id>", methods=['GET'])
+    api_router.add_resource(GetPaymentsResource, "/payments", methods=['GET'])
+
+    from src.resources.plans import GetPlansResource
+    api_router.add_resource(GetPlansResource, "/payment/plans", methods=['GET'])
 
     api_router.register_routes()
 
