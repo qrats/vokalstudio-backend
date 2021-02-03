@@ -33,6 +33,7 @@ class GetSubscriptionsResource(Resource):
             else:
                 subscription_list = SubscriptionsModel.filter_all([
                     SubscriptionsModel.sandbox == False,
+                    SubscriptionsModel.status != 'APPROVAL_PENDING',
                     SubscriptionsModel.user_id == session_user.id
                 ])
 
