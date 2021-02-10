@@ -69,7 +69,7 @@ def cmd_create_product():
     from src.utils.paypal.product import Product
     product = Product(
         name="PRO",
-        description="Include all features across Producer, Syndication and Virtual Studio.",
+        description="Include all features across Producer, Syndication and Vokal Studio.",
     )
     prod = product.create()
 
@@ -105,7 +105,7 @@ def cmd_create_plans():
     plan = Plan(
         product_id='PROD-9LB36648893007432',
         name="PRO",
-        description="Include all features across Producer, Syndication and Virtual Studio.",
+        description="Include all features across Producer, Syndication and Vokal Studio.",
         price=99.00
     )
     pln = plan.create()

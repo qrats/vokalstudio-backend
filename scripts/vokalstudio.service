@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve vokalstudio backend service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vokalstudio/backend
+Environment="PATH=/var/www/vokalstudio/backend/env/bin"
+ExecStart=/var/www/vokalstudio/backend/env/bin/uwsgi --ini /var/www/vokalstudio/backend/vokalstudio.ini
+
+[Install]
+WantedBy=multi-user.target

@@ -206,7 +206,7 @@ class GetMediaURLsResource(Resource):
             media_urls = []
             for user in users:
                 item = {
-                    'url': f"https://api.virtualstudio.host/api/media/configuration/{user.user_id}",
+                    'url': f"https://api.vokalstudio.com/api/media/configuration/{user.user_id}",
                     'name': user.name
                 }
                 media_urls.append(item)

@@ -1,4 +1,4 @@
-## Welcome to Virtual Studio
+## Welcome to Vokal Studio
 
 
 - apt install nginx
