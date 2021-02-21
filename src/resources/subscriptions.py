@@ -9,6 +9,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.users import UserModel, UserRole
 from src.models.plans import PlansModel
 from src.models.subscriptions import SubscriptionsModel
+from src.models.streaming_platforms import StreamingPlatformsModel
+from src.models.uploading_platforms import UploadingPlatformsModel
+
 
 from src.schemas.subscriptions import SubscriptionsSchema
 
@@ -221,11 +224,21 @@ class CancelSubscriptionResource(Resource):
                     SubscriptionsModel.id == id,
                     SubscriptionsModel.sandbox == True
                 ])
+
+                plan = PlansModel.filter_first([
+                    PlansModel.id == subscription.plan_id,
+                    PlansModel.sandbox == True
+                ])
             else:
                 subscription = SubscriptionsModel.filter_first([
                     SubscriptionsModel.user_id == session_user.id,
                     SubscriptionsModel.id == id,
                     SubscriptionsModel.sandbox == False
+                ])
+
+                plan = PlansModel.filter_first([
+                    PlansModel.id == subscription.plan_id,
+                    PlansModel.sandbox == False
                 ])
 
             sub = PaypalSubscription(plan_id=subscription.plan_id)
@@ -235,6 +248,26 @@ class CancelSubscriptionResource(Resource):
             subscription.status = s_details['status']
             subscription.update_time = datetime.strptime(s_details['update_time'], '%Y-%m-%dT%H:%M:%SZ')
             subscription.save()
+
+            if plan.name == 'PRODUCER' or plan.name == 'PRO':
+                platforms = UploadingPlatformsModel.filter_all([
+                    UploadingPlatformsModel.user_id == session_user.id,
+                    UploadingPlatformsModel.active == True,
+                ])
+
+                for platform in platforms:
+                    platform.active = False
+                    platform.save()
+
+            if plan.name == 'SYNDICATION' or plan.name == 'PRO':
+                platforms = StreamingPlatformsModel.filter_all([
+                    StreamingPlatformsModel.user_id == session_user.id,
+                    StreamingPlatformsModel.active == True,
+                ])
+
+                for platform in platforms:
+                    platform.active = False
+                    platform.save()
 
             result = SubscriptionsSchema().dumps(subscription)
             response = json.loads(result)
