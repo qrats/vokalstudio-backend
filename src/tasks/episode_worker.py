@@ -56,20 +56,20 @@ def video_processor(episode_id, episode_url):
                 'show_id': uploader.user_id,
                 'title': episode.title,
                 'description': episode.description,
-                'premium': False,
+                'premium': 'free',
                 'publish_time': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
                 'status': 'pending',
                 'episode_bucket': 'virtualstudio-video',
                 'episode_path': video_key,
                 'premiere': False,
-                'image_bucket': 'virtualstudio-image',
-                'image_path': os.path.basename(episode.image)
+                'indexed': '#'
             }
-            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', json=payload)
-            print(ret.text)
+            if episode.image is not None:
+                payload['image_bucket'] = 'virtualstudio-image'
+                payload['image_path'] = f"image/{os.path.basename(episode.image)}"
 
-        if platform is not None:
-            upload_to_youtube(video_path, platform.refresh_token, episode.title, episode.description)
+            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', data=payload)
+            print(ret.text)
 
         """ Upload on youtube if active """
         platform = UploadingPlatformsModel.filter_first([
@@ -127,16 +127,19 @@ def audio_processor(episode_id, episode_url):
                 'show_id': uploader.user_id,
                 'title': episode.title,
                 'description': episode.description,
-                'premium': False,
+                'premium': 'free',
                 'publish_time': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
                 'status': 'pending',
                 'episode_bucket': 'virtualstudio-audio',
                 'episode_path': audio_key,
                 'premiere': False,
-                'image_bucket': 'virtualstudio-image',
-                'image_path': os.path.basename(episode.image)
+                'indexed': '#'
             }
-            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', json=payload)
+            if episode.image is not None:
+                payload['image_bucket'] = 'virtualstudio-image'
+                payload['image_path'] = f"image/{os.path.basename(episode.image)}"
+
+            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', data=payload)
             print(ret.text)
 
         """ Upload on podbean if active """
