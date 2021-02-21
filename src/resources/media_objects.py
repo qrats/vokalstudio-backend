@@ -44,12 +44,9 @@ class GetMediaObjectsResource(Resource):
                 UserModel.email == get_jwt_identity()
             ])
 
-            if session_user.role == UserRole.ADMIN:
-                media_object_list = MediaObjectsModel.filter_all([])
-            else:
-                media_object_list = MediaObjectsModel.filter_all([
-                    MediaObjectsModel.uploader_id == session_user.id
-                ])
+            media_object_list = MediaObjectsModel.filter_all([
+                MediaObjectsModel.uploader_id == session_user.id
+            ])
 
             media_objects = MediaObjectsSchema().dumps(media_object_list, many=True)
             response = jsonify(json.loads(media_objects))

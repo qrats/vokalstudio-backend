@@ -39,13 +39,10 @@ class GetAuthorizedUsersResource(Resource):
             session_user = UserModel.get_first([
                 UserModel.email == get_jwt_identity()
             ])
-            
-            if session_user.role == UserRole.ADMIN:
-                authorized_user_list = AuthorizedUsersModel.filter_all([])
-            else:
-                authorized_user_list = AuthorizedUsersModel.filter_all([
-                    AuthorizedUsersModel.invited_by == session_user.id
-                ])
+
+            authorized_user_list = AuthorizedUsersModel.filter_all([
+                AuthorizedUsersModel.invited_by == session_user.id
+            ])
 
             authorized_users = AuthorizedUsersSchema().dumps(authorized_user_list, many=True)
             response = jsonify(json.loads(authorized_users))

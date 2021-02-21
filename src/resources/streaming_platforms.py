@@ -44,12 +44,9 @@ class GetStreamingPlatformsResource(Resource):
                 UserModel.email == get_jwt_identity()
             ])
 
-            if session_user.role == UserRole.ADMIN:
-                streaming_platform_list = StreamingPlatformsModel.filter_all([])
-            else:
-                streaming_platform_list = StreamingPlatformsModel.filter_all([
-                    StreamingPlatformsModel.user_id == session_user.id
-                ])
+            streaming_platform_list = StreamingPlatformsModel.filter_all([
+                StreamingPlatformsModel.user_id == session_user.id
+            ])
 
             streaming_platforms = StreamingPlatformsSchema().dumps(streaming_platform_list, many=True)
             response = jsonify(json.loads(streaming_platforms))

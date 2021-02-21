@@ -41,12 +41,9 @@ class GetEpisodesResource(Resource):
                 UserModel.email == get_jwt_identity()
             ])
 
-            if user.role == 'Admin':
-                episode_list = EpisodesModel.filter_all([])
-            else:
-                episode_list = EpisodesModel.filter_all([
-                    EpisodesModel.uploader_id == user.id
-                ])
+            episode_list = EpisodesModel.filter_all([
+                EpisodesModel.uploader_id == user.id
+            ])
 
             episodes = EpisodesSchema().dumps(episode_list, many=True)
             response = jsonify(json.loads(episodes))

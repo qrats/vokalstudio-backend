@@ -49,12 +49,9 @@ class GetMediaConfigurationsResource(Resource):
                 UserModel.email == get_jwt_identity()
             ])
 
-            if session_user.role == UserRole.ADMIN:
-                media_configuration_list = MediaConfigurationModel.filter_all([])
-            else:
-                media_configuration_list = MediaConfigurationModel.filter_all([
-                    MediaConfigurationModel.user_id == session_user.id
-                ])
+            media_configuration_list = MediaConfigurationModel.filter_all([
+                MediaConfigurationModel.user_id == session_user.id
+            ])
 
             media_configurations = MediaConfigurationSchema().dumps(media_configuration_list, many=True)
             response = jsonify(json.loads(media_configurations))

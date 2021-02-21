@@ -43,12 +43,9 @@ class GetUploadingPlatformsResource(Resource):
                 UserModel.email == get_jwt_identity()
             ])
 
-            if session_user.role == UserRole.ADMIN:
-                uploading_platform_list = UploadingPlatformsModel.filter_all([])
-            else:
-                uploading_platform_list = UploadingPlatformsModel.filter_all([
-                    UploadingPlatformsModel.user_id == session_user.id
-                ])
+            uploading_platform_list = UploadingPlatformsModel.filter_all([
+                UploadingPlatformsModel.user_id == session_user.id
+            ])
 
             uploading_platforms = UploadingPlatformsSchema().dumps(uploading_platform_list, many=True)
             response = jsonify(json.loads(uploading_platforms))
