@@ -1,10 +1,12 @@
 import os
 from datetime import datetime
 import subprocess
+import requests
 from app import celery
 from src.utils.s3 import download_file, upload_file
 from src.models.episodes import EpisodesModel
 from src.models.uploading_platforms import UploadingPlatformsModel
+from src.models.users import UserModel
 from flask import current_app as app
 
 import googleapiclient.discovery
@@ -40,6 +42,36 @@ def video_processor(episode_id, episode_url):
             EpisodesModel.id == episode_id
         ])
 
+        """ Upload on vokalnow if active """
+        platform = UploadingPlatformsModel.filter_first([
+            UploadingPlatformsModel.service == 'VokalNow',
+            UploadingPlatformsModel.user_id == episode.uploader_id,
+            UploadingPlatformsModel.active == True
+        ])
+        if platform is not None:
+            uploader = UserModel.get_first([
+                UserModel.id == platform.user_id
+            ])
+            payload = {
+                'show_id': uploader.user_id,
+                'title': episode.title,
+                'description': episode.description,
+                'premium': False,
+                'publish_time': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                'status': 'pending',
+                'episode_bucket': 'virtualstudio-video',
+                'episode_path': video_key,
+                'premiere': False,
+                'image_bucket': 'virtualstudio-image',
+                'image_path': os.path.basename(episode.image)
+            }
+            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', json=payload)
+            print(ret.text)
+
+        if platform is not None:
+            upload_to_youtube(video_path, platform.refresh_token, episode.title, episode.description)
+
+        """ Upload on youtube if active """
         platform = UploadingPlatformsModel.filter_first([
             UploadingPlatformsModel.service == 'Youtube',
             UploadingPlatformsModel.user_id == episode.uploader_id,
@@ -76,11 +108,38 @@ def audio_processor(episode_id, episode_url):
 
         download_file(audio_bucket, audio_key, audio_path)
 
-        """ Upload on podbean if active """
+        """ Upload on connected services """
         episode = EpisodesModel.filter_first([
             EpisodesModel.id == episode_id
         ])
 
+        """ Upload on vokalnow if active """
+        platform = UploadingPlatformsModel.filter_first([
+            UploadingPlatformsModel.service == 'VokalNow',
+            UploadingPlatformsModel.user_id == episode.uploader_id,
+            UploadingPlatformsModel.active == True
+        ])
+        if platform is not None:
+            uploader = UserModel.get_first([
+                UserModel.id == platform.user_id
+            ])
+            payload = {
+                'show_id': uploader.user_id,
+                'title': episode.title,
+                'description': episode.description,
+                'premium': False,
+                'publish_time': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                'status': 'pending',
+                'episode_bucket': 'virtualstudio-audio',
+                'episode_path': audio_key,
+                'premiere': False,
+                'image_bucket': 'virtualstudio-image',
+                'image_path': os.path.basename(episode.image)
+            }
+            ret = requests.post('https://api.vokalnow.com/api/studio/episodes', json=payload)
+            print(ret.text)
+
+        """ Upload on podbean if active """
         platform = UploadingPlatformsModel.filter_first([
             UploadingPlatformsModel.service == 'PodBean',
             UploadingPlatformsModel.user_id == episode.uploader_id,
