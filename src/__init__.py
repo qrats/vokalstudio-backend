@@ -50,12 +50,13 @@ def create_app(config_obj=None):
     api_router.add_resource(UpdateEmailResource, "/auth/email/update", methods=['POST'])
 
     from src.resources.profile import GetProfileResource, UpdateProfileResource, \
-        PasswordResetResource, CloseProfileResource, ProfileImageResource
+        PasswordResetResource, CloseProfileResource, ProfileImageResource, CheckUserIdResource
     api_router.add_resource(GetProfileResource, "/profile", methods=['GET'])
     api_router.add_resource(UpdateProfileResource, "/profile", methods=['PUT'])
     api_router.add_resource(PasswordResetResource, "/profile/password-reset", methods=['POST'])
     api_router.add_resource(CloseProfileResource, "/profile/close", methods=['POST'])
     api_router.add_resource(ProfileImageResource, "/profile/image", methods=['POST'])
+    api_router.add_resource(CheckUserIdResource, "/profile/check-userid/<user_id>", methods=['GET'])
 
     from src.resources.users import GetUserResource, GetUsersResource, \
         UpdateUserResource, DeleteUserResource

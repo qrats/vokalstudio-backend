@@ -36,6 +36,31 @@ class GetProfileResource(Resource):
             return APIResponse.error_500()
 
 
+class CheckUserIdResource(Resource):
+    @jwt_required
+    def get(self, user_id):
+        try:
+            email = get_jwt_identity()
+            session_user = UserModel.get_first([
+                UserModel.email == email
+            ])
+
+            user = UserModel.get_first([
+                UserModel.user_id == user_id
+            ])
+
+            available = True
+            if user is not None:
+                available = False
+                if user_id == session_user.user_id:
+                    available = True
+
+            return APIResponse.success_200({"available": available})
+        except Exception as e:
+            print(e)
+            return APIResponse.error_500()
+
+
 class UpdateProfileResource(Resource):
     @jwt_required
     def put(self):
@@ -44,7 +69,7 @@ class UpdateProfileResource(Resource):
         roles = ("Admin", "User")
         parser.add_argument('role', choices=roles, required=True, help='Invalid role!')
         parser.add_argument('name')
-        parser.add_argument('user_id')
+        parser.add_argument('user_id', required=True, help='User id required!')
         parser.add_argument('phone_number')
         data = parser.parse_args()
 
@@ -53,8 +78,6 @@ class UpdateProfileResource(Resource):
             user = UserModel.get_first([
                 UserModel.email == email
             ])
-            if user is None:
-                return APIResponse.error_404("User not found!")
 
             user.name = data['name']
             user.user_id = data['user_id']

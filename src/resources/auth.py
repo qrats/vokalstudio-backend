@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, \
@@ -27,11 +28,16 @@ class SignUpResource(Resource):
         data = parser.parse_args()
 
         try:
-            user = UserModel.get_first([
-                UserModel.user_id == data['user_id']
-            ])
-            if user is not None:
-                return APIResponse.error_409("User already exist with the same or similar name!")
+            duplicated = True
+            user_id = data['user_id']
+            while duplicated:
+                user = UserModel.get_first([
+                    UserModel.user_id == user_id
+                ])
+                if user is None:
+                    duplicated = False
+                else:
+                    user_id = f"{data['user_id']}-{random.randint(100,999)}"
 
             user = UserModel.get_first([
                 UserModel.email == data['email']
@@ -45,7 +51,7 @@ class SignUpResource(Resource):
 
             user.password = generate_hash(data['password'])
             user.role = UserRole.USER
-            user.user_id = data['user_id']
+            user.user_id = user_id
             user.name = data['name']
             user.verified = False
 
