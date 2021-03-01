@@ -12,10 +12,12 @@ from src.schemas.subscriptions import AdminSubscriptionsSchema
 
 from src.utils.api_response import APIResponse
 from src.utils.paypal.subscription import Subscription
+from src.utils.permissions import admin_required
 
 
 class AdminGetSubscriptionResource(Resource):
     @jwt_required
+    @admin_required
     def get(self, id):
         """
         Get single subscription
@@ -68,6 +70,7 @@ class AdminGetSubscriptionResource(Resource):
 
 class AdminGetSubscriptionsResource(Resource):
     @jwt_required
+    @admin_required
     def get(self):
         """
         Get all subscriptions
@@ -106,6 +109,7 @@ class AdminGetSubscriptionsResource(Resource):
 
 class AdminCreateSubscriptionResource(Resource):
     @jwt_required
+    @admin_required
     def post(self):
         """
         Create subscription
@@ -215,6 +219,7 @@ class AdminCreateSubscriptionResource(Resource):
 
 class AdminUpdateSubscriptionResource(Resource):
     @jwt_required
+    @admin_required
     def put(self, id):
         """
         Update subscription
@@ -308,6 +313,7 @@ class AdminUpdateSubscriptionResource(Resource):
 
 class AdminDeleteSubscriptionResource(Resource):
     @jwt_required
+    @admin_required
     def delete(self, id):
         """
         Delete subscription
