@@ -10,3 +10,4 @@ class PlansSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = PlansModel
+

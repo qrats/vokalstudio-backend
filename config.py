@@ -59,6 +59,9 @@ class DevelopmentConfig(object):
 
     SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT')
 
+    STAGE = os.getenv('STAGE')
+    PROD_HOST = os.getenv('PROD_HOST')
+    DEV_HOST = os.getenv('DEV_HOST')
     HOST_NAME = os.getenv('HOST_NAME')
     CDN_HOST = os.getenv('CDN_HOST')
 
@@ -79,6 +82,13 @@ class DevelopmentConfig(object):
     PODBEAN_CLIENT_ID = os.getenv('PODBEAN_CLIENT_ID')
     PODBEAN_CLIENT_SECRET = os.getenv('PODBEAN_CLIENT_SECRET')
     PODBEAN_REDIRECT_URI = os.getenv('PODBEAN_REDIRECT_URI')
+
+    # Swagger
+    SWAGGER = {
+        'title': 'VokalStudio - API Documentation',
+        "openapi": "3.0.2",
+        "specs_route": "/api/docs"
+    }
 
 
 class ProductionConfig(object):

@@ -6,3 +6,4 @@ class ProductsSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = ProductsModel
+        exclude = ("links",)

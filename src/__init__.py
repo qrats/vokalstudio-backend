@@ -39,6 +39,10 @@ def create_app(config_obj=None):
     from src.routes import api_router
     api_router.init_app(app)
 
+    # Swagger
+    from src.services.flagger import swagger
+    swagger.init_app(app)
+
     from src.resources.auth import SignInResource, SignUpResource, SignOutResource, TokenRefreshResource,\
         UserVerifyResource, ResendVerifyEmailResource, UpdateEmailResource
     api_router.add_resource(SignInResource, "/auth/sign-in")
@@ -57,13 +61,6 @@ def create_app(config_obj=None):
     api_router.add_resource(CloseProfileResource, "/profile/close", methods=['POST'])
     api_router.add_resource(ProfileImageResource, "/profile/image", methods=['POST'])
     api_router.add_resource(CheckUserIdResource, "/profile/check-userid/<user_id>", methods=['GET'])
-
-    from src.resources.users import GetUserResource, GetUsersResource, \
-        UpdateUserResource, DeleteUserResource
-    api_router.add_resource(GetUsersResource, "/users", methods=['GET'])
-    api_router.add_resource(GetUserResource, "/users/<id>", methods=['GET'])
-    api_router.add_resource(UpdateUserResource, "/users/<id>", methods=['PUT'])
-    api_router.add_resource(DeleteUserResource, "/users/<id>", methods=['DELETE'])
 
     from src.resources.episodes import GetEpisodeResource, GetEpisodesResource, \
         CreateEpisodesResource, UpdateEpisodesResource, DeleteEpisodesResource
@@ -140,8 +137,41 @@ def create_app(config_obj=None):
     api_router.add_resource(GetPaymentResource, "/payments/<id>", methods=['GET'])
     api_router.add_resource(GetPaymentsResource, "/payments", methods=['GET'])
 
-    from src.resources.plans import GetPlansResource
-    api_router.add_resource(GetPlansResource, "/payment/plans", methods=['GET'])
+    from src.resources.plans import GetPaymentPlansResource
+    api_router.add_resource(GetPaymentPlansResource, "/payment/plans", methods=['GET'])
+
+    # ----------------- Admin API -------------------------
+    from src.resources.admin.users import GetUserResource, GetUsersResource, \
+        UpdateUserResource, DeleteUserResource
+    api_router.add_resource(GetUsersResource, "/admin/users", methods=['GET'])
+    api_router.add_resource(GetUserResource, "/admin/users/<id>", methods=['GET'])
+    api_router.add_resource(UpdateUserResource, "/admin/users/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteUserResource, "/admin/users/<id>", methods=['DELETE'])
+
+    from src.resources.admin.products import GetProductResource, GetProductsResource, \
+        CreateProductsResource, UpdateProductsResource, DeleteProductsResource
+    api_router.add_resource(GetProductsResource, "/admin/products", methods=['GET'])
+    api_router.add_resource(CreateProductsResource, "/admin/products", methods=['POST'])
+    api_router.add_resource(GetProductResource, "/admin/products/<id>", methods=['GET'])
+    api_router.add_resource(UpdateProductsResource, "/admin/products/<id>", methods=['PUT'])
+    api_router.add_resource(DeleteProductsResource, "/admin/products/<id>", methods=['DELETE'])
+
+    from src.resources.admin.plans import GetPlansResource, GetPlanResource, CreatePlanResource, \
+        UpdatePlanResource, UpdatePlanStatusResource, DeletePlanResource
+    api_router.add_resource(GetPlansResource, "/admin/plans", methods=['GET'])
+    api_router.add_resource(CreatePlanResource, "/admin/plans", methods=['POST'])
+    api_router.add_resource(GetPlanResource, "/admin/plans/<id>", methods=['GET'])
+    api_router.add_resource(UpdatePlanResource, "/admin/plans/<id>", methods=['PUT'])
+    api_router.add_resource(UpdatePlanStatusResource, "/admin/plans/status/<id>", methods=['PUT'])
+    api_router.add_resource(DeletePlanResource, "/admin/plans/<id>", methods=['DELETE'])
+
+    from src.resources.admin.subscriptions import AdminGetSubscriptionsResource, AdminGetSubscriptionResource, \
+        AdminCreateSubscriptionResource, AdminUpdateSubscriptionResource, AdminDeleteSubscriptionResource
+    api_router.add_resource(AdminGetSubscriptionsResource, "/admin/subscriptions", methods=['GET'])
+    api_router.add_resource(AdminCreateSubscriptionResource, "/admin/subscriptions", methods=['POST'])
+    api_router.add_resource(AdminGetSubscriptionResource, "/admin/subscriptions/<id>", methods=['GET'])
+    api_router.add_resource(AdminUpdateSubscriptionResource, "/admin/subscriptions/<id>", methods=['PUT'])
+    api_router.add_resource(AdminDeleteSubscriptionResource, "/admin/subscriptions/<id>", methods=['DELETE'])
 
     api_router.register_routes()
 

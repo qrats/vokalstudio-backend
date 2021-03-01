@@ -21,3 +21,13 @@ class SubscriptionsSchema(ma.SQLAlchemyAutoSchema):
             'update_time',
             'plan'
         )
+
+
+class AdminSubscriptionsSchema(ma.SQLAlchemyAutoSchema):
+    user = fields.Nested(UserSchema)
+    plan = fields.Nested(PlansSchema)
+
+    class Meta:
+        model = SubscriptionsModel
+
+

@@ -32,7 +32,6 @@ class Product(PayPalClient):
 
         if response.status_code == 200:
             product = json.loads(response.text)
-            print(product)
         else:
             product = None
 
@@ -61,6 +60,15 @@ class Product(PayPalClient):
             created_product = None
 
         return created_product
+
+    def update(self, id, data):
+        url = f"{self.url}/{id}"
+        response = requests.patch(url, headers=self.auth_header, data=json.dumps(data))
+
+        if response.status_code != 204:
+            return False
+
+        return True
 
     def list(self, page_size, page_number):
         params = {

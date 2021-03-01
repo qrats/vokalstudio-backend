@@ -99,6 +99,42 @@ class Plan(PayPalClient):
 
         return created_plan
 
+    def update(self, id, data):
+        url = f"{self.url}/{id}"
+        response = requests.patch(url, headers=self.auth_header, data=json.dumps(data))
+
+        if response.status_code != 204:
+            return False
+
+        return True
+
+    def update_price(self, id, pricing_schemes):
+        url = f"{self.url}/{id}/update-pricing-schemes"
+        response = requests.post(url, headers=self.auth_header, data=json.dumps(pricing_schemes))
+
+        if response.status_code != 204:
+            return False
+
+        return True
+
+    def activate(self, id):
+        url = f"{self.url}/{id}/activate"
+        response = requests.post(url, headers=self.auth_header)
+
+        if response.status_code != 204:
+            return False
+
+        return True
+
+    def deactivate(self, id):
+        url = f"{self.url}/{id}/deactivate"
+        response = requests.post(url, headers=self.auth_header)
+
+        if response.status_code != 204:
+            return False
+
+        return True
+
     def list(self):
         plans = []
         response = requests.get(self.url, headers=self.auth_header)

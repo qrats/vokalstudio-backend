@@ -9,7 +9,7 @@ from src.models.plans import PlansModel
 from src.utils.api_response import APIResponse
 
 
-class GetPlansResource(Resource):
+class GetPaymentPlansResource(Resource):
     @jwt_required
     def get(self):
         try:
