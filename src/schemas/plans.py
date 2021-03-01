@@ -10,4 +10,4 @@ class PlansSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = PlansModel
-
+        exclude = ("links",)

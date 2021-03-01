@@ -29,5 +29,6 @@ class AdminSubscriptionsSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = SubscriptionsModel
+        exclude = ("links",)
 
 
