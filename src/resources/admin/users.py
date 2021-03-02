@@ -37,8 +37,8 @@ class GetUsersResource(Resource):
             users = UserModel.get_all([])
             result = AdminUsersSchema().dumps(users, many=True)
 
-            response = json.loads(result)
-            return APIResponse.success_200(response)
+            response = jsonify(json.loads(result))
+            return make_response(response, 200)
         except Exception as e:
             print(e)
             return APIResponse.error_500()
@@ -84,7 +84,7 @@ class GetUserResource(Resource):
             result = AdminUsersSchema().dumps(user)
 
             response = json.loads(result)
-            return APIResponse.success_200(response)
+            return make_response(response, 200)
         except Exception as e:
             print(e)
             return APIResponse.error_500()
@@ -206,7 +206,7 @@ class UpdateUserResource(Resource):
             result = AdminUsersSchema().dumps(user)
 
             response = json.loads(result)
-            return APIResponse.success_200(response)
+            return make_response(response, 200)
         except Exception as e:
             print(e)
             return APIResponse.error_500()
@@ -250,8 +250,8 @@ class DeleteUserResource(Resource):
                 return APIResponse.error_404()
 
             user.delete()
-            response = {'message': 'User deleted'}
-            return APIResponse.success_204(response)
+            response = {'message': 'User deleted!'}
+            return make_response(response, 204)
 
         except Exception as e:
             print(e)

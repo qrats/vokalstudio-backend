@@ -165,7 +165,7 @@ class CreateProductsResource(Resource):
         """
         parser = reqparse.RequestParser()
         parser.add_argument('name', required=True, type=str, help='Name required!')
-        parser.add_argument('type', required=True, type=int,  help='Type required!')
+        parser.add_argument('type', required=True, type=str,  help='Type required!')
         parser.add_argument('category', required=True, type=str,  help='Category required!')
         parser.add_argument('description')
         parser.add_argument('image_url')
@@ -211,7 +211,7 @@ class CreateProductsResource(Resource):
 
             new_product.save()
 
-            result = ProductsSchema().dumps(product)
+            result = ProductsSchema().dumps(new_product)
             response = json.loads(result)
             return make_response(response, 201)
         except Exception as e:
@@ -304,7 +304,7 @@ class UpdateProductsResource(Resource):
 
             if product.category != data['category']:
                 req_data.append({"op": "replace", "path": f"/category", "value": data['category']})
-                product.description = data['category']
+                product.category = data['category']
 
             if product.image_url != data['image_url']:
                 req_data.append({"op": "replace", "path": f"/image_url", "value": data['image_url']})

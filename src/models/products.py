@@ -44,4 +44,4 @@ class ProductsModel(db.Model):
 
     @classmethod
     def filter_all(cls, filters):
-        return cls.query.filter(*filters).all()
+        return cls.query.filter(*filters).order_by(cls.create_time.desc()).all()

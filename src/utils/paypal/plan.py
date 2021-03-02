@@ -71,7 +71,6 @@ class Plan(PayPalClient):
 
         if response.status_code == 200:
             plan = json.loads(response.text)
-            print(plan)
         else:
             plan = None
 
@@ -92,7 +91,6 @@ class Plan(PayPalClient):
 
         if response.status_code == 201:
             created_plan = json.loads(response.text)
-            print(created_plan)
         else:
             print(response.text)
             created_plan = None
@@ -104,6 +102,7 @@ class Plan(PayPalClient):
         response = requests.patch(url, headers=self.auth_header, data=json.dumps(data))
 
         if response.status_code != 204:
+            print(response.text)
             return False
 
         return True
@@ -111,8 +110,8 @@ class Plan(PayPalClient):
     def update_price(self, id, pricing_schemes):
         url = f"{self.url}/{id}/update-pricing-schemes"
         response = requests.post(url, headers=self.auth_header, data=json.dumps(pricing_schemes))
-
         if response.status_code != 204:
+            print(response.text)
             return False
 
         return True
@@ -122,6 +121,7 @@ class Plan(PayPalClient):
         response = requests.post(url, headers=self.auth_header)
 
         if response.status_code != 204:
+            print(response.text)
             return False
 
         return True
@@ -131,6 +131,7 @@ class Plan(PayPalClient):
         response = requests.post(url, headers=self.auth_header)
 
         if response.status_code != 204:
+            print(response.text)
             return False
 
         return True
@@ -141,5 +142,7 @@ class Plan(PayPalClient):
 
         if response.status_code == 200:
             plans = json.loads(response.text)['plans']
+        else:
+            print(response.text)
 
         return plans

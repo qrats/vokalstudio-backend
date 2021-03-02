@@ -65,4 +65,4 @@ class UserModel(db.Model):
 
     @classmethod
     def get_all(cls, filters):
-        return cls.query.filter(*filters).all()
+        return cls.query.filter(*filters).order_by(cls.created_at.desc()).all()

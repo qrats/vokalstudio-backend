@@ -8,7 +8,7 @@ class StreamingPlatformsModel(db.Model):
     __tablename__ = "streaming_platforms"
 
     id = db.Column(db.String(256), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     active = db.Column(db.Boolean, nullable=True)
     service = db.Column(db.String(256), nullable=True)
     service_email = db.Column(db.String(256), nullable=True)
@@ -25,7 +25,7 @@ class StreamingPlatformsModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship(UserModel, foreign_keys=user_id)
+    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id}>"

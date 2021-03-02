@@ -6,6 +6,7 @@ from flask_restful import Resource, reqparse
 from flask import current_app as app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.subscriptions import SubscriptionsModel
+from src.models.plans import PlansModel
 from src.models.users import UserModel
 
 from src.schemas.subscriptions import AdminSubscriptionsSchema
@@ -284,6 +285,45 @@ class AdminUpdateSubscriptionResource(Resource):
 
             if subscription is None:
                 return APIResponse.error_404('Subscription not found')
+
+            if app.config['PAYPAL_MODE'] == 'sandbox':
+                plan_to_update = PlansModel.filter_first([
+                    PlansModel.id == subscription.plan_id,
+                    PlansModel.status == 'ACTIVE',
+                    PlansModel.sandbox == True
+                ])
+            else:
+                plan_to_update = PlansModel.filter_first([
+                    PlansModel.id == subscription.plan_id,
+                    PlansModel.status == 'ACTIVE',
+                    PlansModel.sandbox == False
+                ])
+
+            if plan_to_update is None:
+                return APIResponse.error_404("Plan not found.")
+
+            if app.config['PAYPAL_MODE'] == 'sandbox':
+                subscribed_list = SubscriptionsModel.filter_all([
+                    SubscriptionsModel.user_id == subscription.user_id,
+                    SubscriptionsModel.status == 'ACTIVE',
+                    SubscriptionsModel.sandbox == True
+                ])
+            else:
+                subscribed_list = SubscriptionsModel.filter_all([
+                    SubscriptionsModel.user_id == subscription.user_id,
+                    SubscriptionsModel.status == 'ACTIVE',
+                    SubscriptionsModel.sandbox == False
+                ])
+
+            if data['status'] == 'ACTIVE':
+                if plan_to_update.name == 'PRO':
+                    if len(subscribed_list) > 0:
+                        return APIResponse.error_400(
+                            "User subscribed other plans, please try again after suspending subscribed plans.")
+                else:
+                    for subscribed in subscribed_list:
+                        if subscribed.plan.name == 'PRO':
+                            return APIResponse.error_400("Already subscribed with PRO plan")
 
             if subscription.status != data['status']:
                 if subscription.id.startswith('I-'):

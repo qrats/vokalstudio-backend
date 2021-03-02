@@ -138,7 +138,7 @@ class CreatePlanResource(Resource):
                   description:
                     type: string
                   price:
-                    type: float
+                    type: string
                 required:
                   - product_id
                   - name
@@ -164,7 +164,7 @@ class CreatePlanResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('product_id', required=True, type=str, help='Product id required!')
         parser.add_argument('name', required=True, type=str, help='Name required!')
-        parser.add_argument('description', required=True, type=int,  help='Description required!')
+        parser.add_argument('description', required=True, type=str,  help='Description required!')
         parser.add_argument('price', required=True, type=str, help='Price required!')
         data = parser.parse_args()
 
@@ -216,7 +216,7 @@ class CreatePlanResource(Resource):
 
             new_plan.save()
 
-            result = PlansSchema().dumps(plan)
+            result = PlansSchema().dumps(new_plan)
             response = json.loads(result)
             return make_response(response, 201)
         except Exception as e:
@@ -253,7 +253,7 @@ class UpdatePlanResource(Resource):
                   description:
                     type: string
                   price:
-                    type: float
+                    type: string
                 example:
                   description: New plan description
                   prince: 49.0
@@ -270,7 +270,7 @@ class UpdatePlanResource(Resource):
             description: Internal server error
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('description', required=True, type=int, help='Description required!')
+        parser.add_argument('description', required=True, type=str, help='Description required!')
         parser.add_argument('price', required=True, type=str, help='Price required!')
         data = parser.parse_args()
 
@@ -307,9 +307,26 @@ class UpdatePlanResource(Resource):
                 plan.save()
 
             if plan.billing_cycles[0].get('pricing_scheme').get('fixed_price').get('value') != data.get('price'):
-                pricing_scheme = plan.billing_cycles[0].get('pricing_scheme')
-                pricing_scheme['fixed_price']['value'] = data.get('price')
-                if not pln.update_price(plan.id, pricing_schemes=[pricing_scheme]):
+
+                pricing_schemes = {
+                    'pricing_schemes': [
+                        {
+                            "billing_cycle_sequence": plan.billing_cycles[0].get('sequence'),
+                            "pricing_scheme": {
+                                "fixed_price": {
+                                  "value": data.get('price'),
+                                  "currency_code": "USD"
+                                },
+                                "roll_out_strategy": {
+                                  "effective_time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                  "process_change_from": "NEXT_PAYMENT"
+                                }
+                              },
+                        }
+                    ]
+                }
+
+                if not pln.update_price(plan.id, pricing_schemes):
                     return APIResponse.error_500("Plan update failed.")
 
                 p = pln.details(plan.id)
@@ -459,7 +476,7 @@ class DeletePlanResource(Resource):
                 ])
 
             if plan is None:
-                return APIResponse.error_404("Product not found!")
+                return APIResponse.error_404("Plan not found!")
 
             if plan.status != 'INACTIVE':
                 pln = Plan(
@@ -470,7 +487,7 @@ class DeletePlanResource(Resource):
                 pln.deactivate(plan.id)
 
             plan.delete()
-            response = {'message': 'Product deleted'}
+            response = {'message': 'Plan deleted'}
             return make_response(response, 204)
 
         except Exception as e:

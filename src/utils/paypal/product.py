@@ -33,6 +33,7 @@ class Product(PayPalClient):
         if response.status_code == 200:
             product = json.loads(response.text)
         else:
+            print(response.text)
             product = None
 
         return product
@@ -55,8 +56,8 @@ class Product(PayPalClient):
 
         if response.status_code == 201:
             created_product = json.loads(response.text)
-            print(created_product)
         else:
+            print(response.text)
             created_product = None
 
         return created_product
@@ -67,6 +68,8 @@ class Product(PayPalClient):
 
         if response.status_code != 204:
             return False
+        else:
+            print(response.text)
 
         return True
 

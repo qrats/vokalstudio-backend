@@ -8,7 +8,7 @@ class UploadingPlatformsModel(db.Model):
     __tablename__ = "uploading_platforms"
 
     id = db.Column(db.String(256), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     active = db.Column(db.Boolean, nullable=True, default=False)
     service = db.Column(db.String(256), nullable=False)
     views = db.Column(db.Integer, nullable=False, default=0)
@@ -21,7 +21,7 @@ class UploadingPlatformsModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship(UserModel, foreign_keys=user_id)
+    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id}>"
@@ -48,4 +48,4 @@ class UploadingPlatformsModel(db.Model):
 
     @classmethod
     def filter_all(cls, filters):
-        return cls.query.filter(*filters).all()
+        return cls.query.filter(*filters).order_by(cls.created_at.desc()).all()

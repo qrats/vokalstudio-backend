@@ -8,7 +8,7 @@ class PaymentsModel(db.Model):
     __tablename__ = "payments"
 
     id = db.Column(db.String(256), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     amount = db.Column(db.Float, nullable=False, default=0.0)
     funding_source = db.Column(db.String(256), nullable=False, default='paypal')
     invoice_id = db.Column(db.String(256), nullable=True)
@@ -18,7 +18,7 @@ class PaymentsModel(db.Model):
     create_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     update_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship(UserModel, foreign_keys=user_id)
+    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id} ({self.amount})>"
