@@ -9,7 +9,7 @@ class PlansModel(db.Model):
 
     id = db.Column(db.String(256), primary_key=True)
     sandbox = db.Column(db.Boolean, nullable=False, default=True)
-    product_id = db.Column(db.String(256), db.ForeignKey('products.id', ondelete='CASCADE'))
+    product_id = db.Column(db.String(256), db.ForeignKey('products.id'))
     name = db.Column(db.String(256), nullable=False)
     description = db.Column(db.String(4096), nullable=True)
     status = db.Column(db.String(256), nullable=True, default='ACTIVE')
@@ -22,7 +22,7 @@ class PlansModel(db.Model):
     create_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     update_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    product = db.relationship(ProductsModel, foreign_keys=product_id, cascade="all,delete")
+    product = db.relationship(ProductsModel, foreign_keys=product_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id} ({self.name})>"

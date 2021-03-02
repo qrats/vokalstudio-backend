@@ -8,7 +8,7 @@ class MediaObjectsModel(db.Model):
     __tablename__ = "media_objects"
 
     id = db.Column(db.String(256), primary_key=True)
-    uploader_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    uploader_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     file_name = db.Column(db.String(256), nullable=False)
     description = db.Column(db.String(4096), nullable=True)
     url = db.Column(db.String(1024), nullable=True)
@@ -19,7 +19,7 @@ class MediaObjectsModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    uploader = db.relationship(UserModel, foreign_keys=uploader_id, cascade="all,delete")
+    uploader = db.relationship(UserModel, foreign_keys=uploader_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id} ({self.file_name})>"

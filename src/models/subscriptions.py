@@ -10,8 +10,8 @@ class SubscriptionsModel(db.Model):
 
     id = db.Column(db.String(256), primary_key=True)
     sandbox = db.Column(db.Boolean, nullable=False, default=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
-    plan_id = db.Column(db.String(256), db.ForeignKey('plans.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    plan_id = db.Column(db.String(256), db.ForeignKey('plans.id'))
     status = db.Column(db.String(256), nullable=False, default="APPROVAL_PENDING")
     subscriber = db.Column(db.JSON, nullable=True)
     billing_info = db.Column(db.JSON, nullable=True)
@@ -22,8 +22,8 @@ class SubscriptionsModel(db.Model):
     create_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     update_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    plan = db.relationship(PlansModel, foreign_keys=plan_id, cascade="all,delete")
-    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
+    plan = db.relationship(PlansModel, foreign_keys=plan_id)
+    user = db.relationship(UserModel, foreign_keys=user_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id} ({self.plan_id})>"

@@ -8,7 +8,7 @@ class EpisodesModel(db.Model):
     __tablename__ = "episodes"
 
     id = db.Column(db.String(256), primary_key=True)
-    uploader_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    uploader_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     title = db.Column(db.String(256), nullable=False)
     description = db.Column(db.String(4096), nullable=True)
     url = db.Column(db.String(1024), nullable=True)
@@ -22,7 +22,7 @@ class EpisodesModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    uploader = db.relationship(UserModel, foreign_keys=uploader_id, cascade="all,delete")
+    uploader = db.relationship(UserModel, foreign_keys=uploader_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id} ({self.title}), role: {self.url}>"

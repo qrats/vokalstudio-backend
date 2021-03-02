@@ -8,7 +8,7 @@ class MediaConfigurationModel(db.Model):
     __tablename__ = "media_configuration"
 
     id = db.Column(db.String(256), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     CONFIG_VERSION = db.Column(db.String(256), nullable=False, default="2")
     autoSwitchEnabledAfterInto = db.Column(db.Boolean, nullable=True, default=True)
     autoSwitchMinLevel = db.Column(db.Integer, nullable=False, default=2500)
@@ -29,7 +29,7 @@ class MediaConfigurationModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
+    user = db.relationship(UserModel, foreign_keys=user_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id}>"

@@ -8,7 +8,7 @@ class StreamingPlatformsModel(db.Model):
     __tablename__ = "streaming_platforms"
 
     id = db.Column(db.String(256), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     active = db.Column(db.Boolean, nullable=True)
     service = db.Column(db.String(256), nullable=True)
     service_email = db.Column(db.String(256), nullable=True)
