@@ -25,6 +25,8 @@ class MediaConfigurationModel(db.Model):
     recording_start_delay = db.Column(db.Integer, nullable=False, default=1)
     show_start_delay = db.Column(db.Integer, nullable=False, default=2)
     time_to_switch_to_intro_with_host = db.Column(db.Integer, nullable=False, default=5)
+    intro_video = db.Column(db.String(1024), nullable=True)
+    outro_video = db.Column(db.String(1024), nullable=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

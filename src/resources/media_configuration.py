@@ -139,6 +139,8 @@ class UpdateMediaConfigurationResource(Resource):
         parser.add_argument('recording_start_delay', type=int)
         parser.add_argument('show_start_delay')
         parser.add_argument('time_to_switch_to_intro_with_host')
+        parser.add_argument('intro_video')
+        parser.add_argument('outro_video')
         data = parser.parse_args()
 
         try:
@@ -166,6 +168,8 @@ class UpdateMediaConfigurationResource(Resource):
             media_configuration.recording_start_delay = data['recording_start_delay']
             media_configuration.show_start_delay = data['show_start_delay']
             media_configuration.time_to_switch_to_intro_with_host = data['time_to_switch_to_intro_with_host']
+            media_configuration.intro_video = data['intro_video']
+            media_configuration.outro_video = data['outro_video']
 
             media_configuration.save()
             result = MediaConfigurationSchema().dumps(media_configuration)
@@ -285,7 +289,7 @@ class LoadMediaConfigurationResource(Resource):
                         "name": "Intro",
                         "type": "introscene",
                         "obs_scene": "Intro",
-                        "file": "intro.mp4",
+                        "file": media_configuration.intro_video,
                         "show_in_switcherpanel": True
                     }, {
                         "name": "Intro with Host",
@@ -342,7 +346,7 @@ class LoadMediaConfigurationResource(Resource):
                         "name": "Outro",
                         "type": "outroscene",
                         "obs_scene": "Outro",
-                        "file": "outro.mp4",
+                        "file": media_configuration.outro_video,
                         "show_in_switcherpanel": True
                     }, {
                         "name": "Blank",
