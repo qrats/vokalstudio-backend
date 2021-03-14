@@ -25,7 +25,7 @@ class StreamingPlatformsModel(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship(UserModel, foreign_keys=user_id, cascade="all,delete")
+    user = db.relationship(UserModel, foreign_keys=user_id)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.id}>"
