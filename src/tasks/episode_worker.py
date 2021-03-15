@@ -208,7 +208,9 @@ def upload_to_podbean(audio_url, image_url, refresh_token, title, description):
         }
         if image_url is not None:
             data['logo_key'] = image_url
-        r = requests.post(url, auth=auth, data=data)
+
+        print(data)
+        r = requests.post(url, data=data)
         print(r.content)
     except Exception as e:
         print(e)
