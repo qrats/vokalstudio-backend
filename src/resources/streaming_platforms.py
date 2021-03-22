@@ -1,3 +1,4 @@
+import os
 import uuid
 import json
 import requests
@@ -67,7 +68,8 @@ class CreateStreamingPlatformResource(Resource):
         parser.add_argument('active', required=True, type=bool, help='Active required!')
         parser.add_argument('title', required=True, help='Title required!')
         parser.add_argument('description', required=True, help='Description required!')
-        parser.add_argument('custom_rtmp', type=bool, help='Active required!')
+        parser.add_argument('custom_rtmp', type=bool)
+        parser.add_argument('broadcaster_id', type=str)
         parser.add_argument('rtmp_address')
         parser.add_argument('frame_rate')
         parser.add_argument('resolution')
@@ -224,6 +226,26 @@ class CreateStreamingPlatformResource(Resource):
                 extra = {
                     'game_id': int(channel['game_id']),
                     'broadcaster_id': str(channel['broadcaster_id']),
+                }
+            elif data['service'] == 'Facebook':
+                url = f"https://graph.facebook.com/{data['broadcaster_id']}/live_videos"
+                params = {
+                    'status': 'LIVE_NOW',
+                    'access_token': data['refresh_token'],
+                    'title': data['title'],
+                    'description': data['description']
+                }
+                r = requests.post(url, params=params)
+                if r.status_code != 200:
+                    return APIResponse.error_500("Failed connection to Facebook")
+                resp = r.json()
+                stream_key = os.path.basename(resp['stream_url'])
+                ingestion_address = "rtmp://rtmp-api.facebook.com:80/rtmp"
+                channel_id = resp['id']
+                channel_name = data['channel_name']
+                extra = {
+                    "id": resp["id"],
+                    "secure_stream_url": resp["secure_stream_url"]
                 }
             else:
                 return APIResponse.error_400("Service not support")

@@ -69,6 +69,51 @@ class OAuthTokenResource(Resource):
         return response
 
     @staticmethod
+    def getFacebookOauthToken(code):
+        # Get app access token
+        payload = {
+            'client_id': app.config['FACEBOOK_CLIENT_ID'],
+            'client_secret': app.config['FACEBOOK_CLIENT_SECRET'],
+            'grant_type': 'client_credentials',
+        }
+
+        url = 'https://graph.facebook.com/oauth/access_token'
+        r = requests.get(url, params=payload)
+        token = json.loads(r.content)
+        access_token = token['access_token']
+
+        payload = {
+            'client_id': app.config['FACEBOOK_CLIENT_ID'],
+            'client_secret': app.config['FACEBOOK_CLIENT_SECRET'],
+            'redirect_uri': app.config['FACEBOOK_REDIRECT_URI'],
+            'code': code,
+        }
+
+        url = 'https://graph.facebook.com/v10.0/oauth/access_token'
+        r = requests.get(url, params=payload)
+        token = json.loads(r.content)
+        input_token = token['access_token']
+
+        payload = {'access_token': access_token, 'input_token': input_token}
+        url = 'https://graph.facebook.com/debug_token'
+        r = requests.get(url, params=payload)
+        token = json.loads(r.content)
+        user_id = token['data']['user_id']
+
+        payload = {'access_token': input_token, 'fields': 'name,email'}
+        url = f'https://graph.facebook.com/v10.0/{user_id}'
+        r = requests.get(url, params=payload)
+        user_info = json.loads(r.content, encoding='utf-8')
+
+        response = {
+            'user_id': user_id,
+            'access_token': input_token,
+            'name': user_info['name'],
+            'service_email': user_info['email'],
+        }
+        return response
+
+    @staticmethod
     def getYoutubeOauthToken(code):
         credentials = client.credentials_from_code(
             app.config['GOOGLE_CLIENT_ID'],
@@ -105,6 +150,8 @@ class OAuthTokenResource(Resource):
                 oauth_info = self.getPodBeanOauthToken(data['auth_code'])
             elif data['service'] == 'Twitch':
                 oauth_info = self.getTwitchOauthToken(data['auth_code'])
+            elif data['service'] == 'Facebook':
+                oauth_info = self.getFacebookOauthToken(data['auth_code'])
             else:
                 return APIResponse.error_400("Invalid service")
 

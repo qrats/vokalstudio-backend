@@ -83,6 +83,12 @@ class DevelopmentConfig(object):
     PODBEAN_CLIENT_SECRET = os.getenv('PODBEAN_CLIENT_SECRET')
     PODBEAN_REDIRECT_URI = os.getenv('PODBEAN_REDIRECT_URI')
 
+    # Facebook configuration
+    FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
+    FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
+    FACEBOOK_CLIENT_TOKEN = os.getenv('FACEBOOK_CLIENT_TOKEN')
+    FACEBOOK_REDIRECT_URI = os.getenv('FACEBOOK_REDIRECT_URI')
+
     # Swagger
     SWAGGER = {
         'title': 'VokalStudio - API Documentation',
