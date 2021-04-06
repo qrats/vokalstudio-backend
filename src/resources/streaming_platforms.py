@@ -121,7 +121,7 @@ class CreateStreamingPlatformResource(Resource):
                 try:
                     broadcast_response = request.execute()
                 except Exception as e:
-                    return APIResponse.error_400("The user is not enabled for live streaming.")
+                    return APIResponse.error_400("This YouTube account does not have live streaming enabled.")
 
                 request = youtube.liveStreams().insert(
                     part="snippet,cdn,contentDetails,status",
@@ -143,7 +143,7 @@ class CreateStreamingPlatformResource(Resource):
                 try:
                     stream_response = request.execute()
                 except Exception as e:
-                    return APIResponse.error_400("The user is not enabled for live streaming.")
+                    return APIResponse.error_400("This YouTube account does not have live streaming enabled.")
 
                 stream_key = stream_response['cdn']['ingestionInfo']['streamName']
                 ingestion_address = stream_response['cdn']['ingestionInfo']['ingestionAddress']
