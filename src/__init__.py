@@ -173,6 +173,18 @@ def create_app(config_obj=None):
     api_router.add_resource(AdminUpdateSubscriptionResource, "/admin/subscriptions/<id>", methods=['PUT'])
     api_router.add_resource(AdminDeleteSubscriptionResource, "/admin/subscriptions/<id>", methods=['DELETE'])
 
+    from src.resources.blogs import GetBlogsResource, GetBlogResource
+    api_router.add_resource(GetBlogResource, "/blogs/<slug>", methods=['GET'])
+    api_router.add_resource(GetBlogsResource, "/blogs", methods=['GET'])
+
+    from src.resources.admin.blogs import AdminGetBlogResource, AdminCreateBlogResource, AdminDeleteBlogResource, \
+        AdminUpdateBlogResource, AdminGetBlogsResource
+    api_router.add_resource(AdminGetBlogsResource, "/admin/blogs", methods=['GET'])
+    api_router.add_resource(AdminCreateBlogResource, "/admin/blogs", methods=['POST'])
+    api_router.add_resource(AdminGetBlogResource, "/admin/blogs/<id>", methods=['GET'])
+    api_router.add_resource(AdminUpdateBlogResource, "/admin/blogs/<id>", methods=['PUT'])
+    api_router.add_resource(AdminDeleteBlogResource, "/admin/blogs/<id>", methods=['DELETE'])
+
     api_router.register_routes()
 
     return app
