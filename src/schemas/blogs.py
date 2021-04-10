@@ -6,3 +6,10 @@ class BlogsSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = BlogsModel
+        exclude = ('content', )
+
+
+class BlogDetailSchema(ma.SQLAlchemyAutoSchema):
+
+    class Meta:
+        model = BlogsModel

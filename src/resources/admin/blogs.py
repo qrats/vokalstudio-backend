@@ -7,7 +7,7 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from src.models.blogs import BlogsModel
-from src.schemas.blogs import BlogsSchema
+from src.schemas.blogs import BlogsSchema, BlogDetailSchema
 
 from src.utils.api_response import APIResponse
 
@@ -23,7 +23,7 @@ class AdminGetBlogResource(Resource):
             if blog_obj is None:
                 return APIResponse.error_404()
 
-            blog = BlogsSchema().dumps(blog_obj)
+            blog = BlogDetailSchema().dumps(blog_obj)
             response = jsonify(json.loads(blog))
             return make_response(response, 200)
         except Exception as e:
@@ -74,7 +74,7 @@ class AdminCreateBlogResource(Resource):
             )
             blog.save()
 
-            result = BlogsSchema().dumps(blog)
+            result = BlogDetailSchema().dumps(blog)
             response = json.loads(result)
             return make_response(response, 201)
         except Exception as e:
@@ -115,7 +115,7 @@ class AdminUpdateBlogResource(Resource):
             blog.updated_at = datetime.utcnow()
             blog.save()
 
-            result = BlogsSchema().dumps(blog)
+            result = BlogDetailSchema().dumps(blog)
             response = json.loads(result)
             return make_response(response, 200)
         except Exception as e:
