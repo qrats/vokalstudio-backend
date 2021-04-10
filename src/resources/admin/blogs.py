@@ -58,10 +58,6 @@ class AdminCreateBlogResource(Resource):
 
         try:
             slug = re.sub('[^a-zA-Z0-9]', '-', data['title']).lower()
-            with open(f"/tmp/{slug}.md", "w") as text_file:
-                text_file.write(data['content'])
-                text_file.close()
-
             blog = BlogsModel(
                 slug=slug,
                 title=data['title'],
@@ -102,10 +98,6 @@ class AdminUpdateBlogResource(Resource):
                 return APIResponse.error_404()
 
             slug = re.sub('[^a-zA-Z0-9]', '-', data['title']).lower()
-            with open(f"/tmp/{slug}.md", "w") as text_file:
-                text_file.write(data['content'])
-                text_file.close()
-
             blog.slug = slug
             blog.title = data['title']
             blog.content = data['content']
@@ -134,7 +126,6 @@ class AdminDeleteBlogResource(Resource):
             if blog is None:
                 return APIResponse.error_404()
 
-            os.remove(f"/tmp/{slug}.md")
             blog.delete()
             response = {'message': 'Blog deleted!'}
             return make_response(response, 204)
