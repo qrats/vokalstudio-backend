@@ -6,4 +6,3 @@ class BlogsSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = BlogsModel
-        exclude = ['content']

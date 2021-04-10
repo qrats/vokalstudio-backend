@@ -12,7 +12,6 @@ from src.utils.api_response import APIResponse
 
 
 class GetBlogResource(Resource):
-    @jwt_required
     def get(self, slug):
         try:
             blog_obj = BlogsModel.filter_first([
@@ -32,7 +31,6 @@ class GetBlogResource(Resource):
 
 
 class GetBlogsResource(Resource):
-    @jwt_required
     def get(self):
         try:
             blog_list = BlogsModel.filter_all([

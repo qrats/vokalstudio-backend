@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from datetime import datetime
 from flask import make_response, jsonify
 from flask_restful import Resource, reqparse
@@ -36,7 +37,7 @@ class AdminGetBlogsResource(Resource):
         try:
             blog_list = BlogsModel.filter_all([])
 
-            blogs = BlogsSchema().dumps(blog_list, many=True, exclude=['content'])
+            blogs = BlogsSchema().dumps(blog_list, many=True)
             response = jsonify(json.loads(blogs))
             return make_response(response, 200)
         except Exception as e:
@@ -56,7 +57,7 @@ class AdminCreateBlogResource(Resource):
         data = parser.parse_args()
 
         try:
-            slug = '-'.join(e for e in data['title'] if e.isalnum()).lower()
+            slug = re.sub('[^a-zA-Z0-9]', '-', data['title']).lower()
             with open(f"/tmp/{slug}.md", "w") as text_file:
                 text_file.write(data['content'])
                 text_file.close()
@@ -100,7 +101,7 @@ class AdminUpdateBlogResource(Resource):
             if blog is None:
                 return APIResponse.error_404()
 
-            slug = '-'.join(e for e in data['title'] if e.isalnum()).lower()
+            slug = re.sub('[^a-zA-Z0-9]', '-', data['title']).lower()
             with open(f"/tmp/{slug}.md", "w") as text_file:
                 text_file.write(data['content'])
                 text_file.close()

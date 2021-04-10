@@ -181,9 +181,9 @@ def create_app(config_obj=None):
         AdminUpdateBlogResource, AdminGetBlogsResource
     api_router.add_resource(AdminGetBlogsResource, "/admin/blogs", methods=['GET'])
     api_router.add_resource(AdminCreateBlogResource, "/admin/blogs", methods=['POST'])
-    api_router.add_resource(AdminGetBlogResource, "/admin/blogs/<id>", methods=['GET'])
-    api_router.add_resource(AdminUpdateBlogResource, "/admin/blogs/<id>", methods=['PUT'])
-    api_router.add_resource(AdminDeleteBlogResource, "/admin/blogs/<id>", methods=['DELETE'])
+    api_router.add_resource(AdminGetBlogResource, "/admin/blogs/<slug>", methods=['GET'])
+    api_router.add_resource(AdminUpdateBlogResource, "/admin/blogs/<slug>", methods=['PUT'])
+    api_router.add_resource(AdminDeleteBlogResource, "/admin/blogs/<slug>", methods=['DELETE'])
 
     api_router.register_routes()
 
