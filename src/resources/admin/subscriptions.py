@@ -8,12 +8,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.subscriptions import SubscriptionsModel
 from src.models.plans import PlansModel
 from src.models.users import UserModel
+from src.models.restream_servers import RestreamServersModel
 
 from src.schemas.subscriptions import AdminSubscriptionsSchema
 
 from src.utils.api_response import APIResponse
 from src.utils.paypal.subscription import Subscription
 from src.utils.permissions import admin_required
+from src.utils.restream_server import *
 
 
 class AdminGetSubscriptionResource(Resource):
@@ -316,14 +318,14 @@ class AdminUpdateSubscriptionResource(Resource):
                 ])
 
             if data['status'] == 'ACTIVE':
-                if plan_to_update.name == 'PRO':
+                if plan_to_update.name == 'Bundle':
                     if len(subscribed_list) > 0:
                         return APIResponse.error_400(
                             "User subscribed other plans, please try again after suspending subscribed plans.")
                 else:
                     for subscribed in subscribed_list:
-                        if subscribed.plan.name == 'PRO':
-                            return APIResponse.error_400("Already subscribed with PRO plan")
+                        if subscribed.plan.name == 'Bundle':
+                            return APIResponse.error_400("Already subscribed with bundle plan")
 
             if subscription.status != data['status']:
                 if subscription.id.startswith('I-'):
@@ -339,6 +341,30 @@ class AdminUpdateSubscriptionResource(Resource):
                     subscription.status = s.get('status')
                 else:
                     subscription.status = data.get('status')
+
+                if data['status'] == "ACTIVE":
+                    # Create restream server if Syndication or Bundle
+                    if subscription.plan.name in ['Syndication', 'Bundle'] and subscription.status == 'ACTIVE':
+                        server_info = create_server(f"rs-{subscription.id}")
+                        server = RestreamServersModel(
+                            id=f"{str(uuid.uuid4().hex)}",
+                            subscription_id=subscription.id,
+                            instance_id=server_info["InstanceId"],
+                            state="pending",
+                            reservation=json.loads(json.dumps(server_info, default=str)),
+                            created_at=datetime.utcnow(),
+                            updated_at=datetime.utcnow(),
+                        )
+                        server.save()
+                else:
+                    # Terminate restream servers
+                    servers = RestreamServersModel.filter_all([
+                        RestreamServersModel.subscription_id == subscription.id
+                    ])
+
+                    for server in servers:
+                        terminate_server(server.instance_id)
+                        server.delete()
 
             subscription.update_time = datetime.utcnow()
             subscription.save()

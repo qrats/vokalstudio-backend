@@ -1,3 +1,4 @@
+import uuid
 import json
 from urllib import parse
 from datetime import datetime
@@ -11,12 +12,13 @@ from src.models.plans import PlansModel
 from src.models.subscriptions import SubscriptionsModel
 from src.models.streaming_platforms import StreamingPlatformsModel
 from src.models.uploading_platforms import UploadingPlatformsModel
-
+from src.models.restream_servers import RestreamServersModel
 
 from src.schemas.subscriptions import SubscriptionsSchema
 
 from src.utils.api_response import APIResponse
 from src.utils.paypal.subscription import Subscription as PaypalSubscription
+from src.utils.restream_server import *
 
 
 class GetSubscriptionsResource(Resource):
@@ -177,8 +179,8 @@ class UpdateSubscriptionResource(Resource):
             for sub in subscriptions:
                 sub.delete()
 
-            # Unsubscribe non-PRO
-            if subscription.plan.name == 'PRO' and subscription.status == 'ACTIVE':
+            # Unsubscribe non-Bundle
+            if subscription.plan.name == 'Bundle' and subscription.status == 'ACTIVE':
                 if app.config['PAYPAL_MODE'] == 'sandbox':
                     subscriptions = SubscriptionsModel.filter_all([
                         SubscriptionsModel.user_id == session_user.id,
@@ -193,7 +195,7 @@ class UpdateSubscriptionResource(Resource):
                     ])
 
                 for sub in subscriptions:
-                    if sub.plan.name != 'PRO':
+                    if sub.plan.name != 'Bundle':
                         s = PaypalSubscription(plan_id=sub.plan_id)
                         s.unsubscribe(sub.id)
 
@@ -249,7 +251,7 @@ class CancelSubscriptionResource(Resource):
             subscription.update_time = datetime.strptime(s_details['update_time'], '%Y-%m-%dT%H:%M:%SZ')
             subscription.save()
 
-            if plan.name == 'PRODUCER' or plan.name == 'PRO':
+            if plan.name == 'Producer' or plan.name == 'Bundle':
                 platforms = UploadingPlatformsModel.filter_all([
                     UploadingPlatformsModel.user_id == session_user.id,
                     UploadingPlatformsModel.active == True,
@@ -259,7 +261,7 @@ class CancelSubscriptionResource(Resource):
                     platform.active = False
                     platform.save()
 
-            if plan.name == 'SYNDICATION' or plan.name == 'PRO':
+            if plan.name == 'Syndication' or plan.name == 'Bundle':
                 platforms = StreamingPlatformsModel.filter_all([
                     StreamingPlatformsModel.user_id == session_user.id,
                     StreamingPlatformsModel.active == True,
@@ -268,6 +270,15 @@ class CancelSubscriptionResource(Resource):
                 for platform in platforms:
                     platform.active = False
                     platform.save()
+
+                # Terminate restream servers
+                servers = RestreamServersModel.filter_all([
+                    RestreamServersModel.subscription_id == subscription.id
+                ])
+
+                for server in servers:
+                    terminate_server(server.instance_id)
+                    server.delete()
 
             result = SubscriptionsSchema().dumps(subscription)
             response = json.loads(result)
@@ -306,8 +317,22 @@ class ActivateSubscriptionResource(Resource):
             subscription.update_time = datetime.strptime(s_details['update_time'], '%Y-%m-%dT%H:%M:%SZ')
             subscription.save()
 
-            # Unsubscribe non-PRO
-            if subscription.plan.name == 'PRO' and subscription.status == 'ACTIVE':
+            # Create restream server if Syndication or Bundle
+            if subscription.plan.name in ['Syndication', 'Bundle'] and subscription.status == 'ACTIVE':
+                server_info = create_server(f"rs-{subscription.id}")
+                server = RestreamServersModel(
+                    id=f"{str(uuid.uuid4().hex)}",
+                    subscription_id=subscription.id,
+                    instance_id=server_info["InstanceId"],
+                    state="pending",
+                    reservation=json.loads(json.dumps(server_info, default=str)),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                server.save()
+
+            # Unsubscribe non-Bundle
+            if subscription.plan.name == 'Bundle' and subscription.status == 'ACTIVE':
                 if app.config['PAYPAL_MODE'] == 'sandbox':
                     subscriptions = SubscriptionsModel.filter_all([
                         SubscriptionsModel.user_id == session_user.id,
@@ -322,7 +347,7 @@ class ActivateSubscriptionResource(Resource):
                     ])
 
                 for sub in subscriptions:
-                    if sub.plan.name != 'PRO':
+                    if sub.plan.name != 'Bundle':
                         s = PaypalSubscription(plan_id=sub.plan_id)
                         s.unsubscribe(sub.id)
 
