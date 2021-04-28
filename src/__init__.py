@@ -185,6 +185,12 @@ def create_app(config_obj=None):
     api_router.add_resource(AdminUpdateBlogResource, "/admin/blogs/<slug>", methods=['PUT'])
     api_router.add_resource(AdminDeleteBlogResource, "/admin/blogs/<slug>", methods=['DELETE'])
 
+    from src.resources.restream_servers import GetRestreamServerResource
+    api_router.add_resource(GetRestreamServerResource, "/restream-servers/subscription/<subscription_id>", methods=['GET'])
+
+    from src.resources.admin.restream_servers import GetAdminRestreamServersResource
+    api_router.add_resource(GetAdminRestreamServersResource, "/admin/restream-servers", methods=['GET'])
+
     api_router.register_routes()
 
     return app
