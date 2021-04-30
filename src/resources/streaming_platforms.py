@@ -253,7 +253,7 @@ class CreateStreamingPlatformResource(Resource):
             streaming_platform = StreamingPlatformsModel(
                 id=str(uuid.uuid4().hex),
                 user_id=session_user.id,
-                active=data['active'],
+                active=True,
                 service=data['service'],
                 service_email=data['service_email'],
                 image=data['image'],
