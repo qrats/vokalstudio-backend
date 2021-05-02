@@ -76,6 +76,7 @@ class CreateStreamingPlatformResource(Resource):
         parser.add_argument('game_id')
         parser.add_argument('channel_name')
         parser.add_argument('ingestion_address')
+        parser.add_argument('stream_key')
         data = parser.parse_args()
 
         session_user = UserModel.get_first([
@@ -90,6 +91,9 @@ class CreateStreamingPlatformResource(Resource):
             if data['service'] == 'VokalNow':
                 stream_key = session_user.user_id
                 ingestion_address = 'rtmp://stream.vokalcdn.com'
+            elif data['service'] == 'Custom':
+                stream_key = data['stream_key']
+                ingestion_address = data['ingestion_address'].rstrip('/')
             elif data['service'] == 'Youtube':
                 info = {
                     'refresh_token': data['refresh_token'],
@@ -293,6 +297,7 @@ class UpdateStreamingPlatformResource(Resource):
         parser.add_argument('resolution')
         parser.add_argument('game_id')
         parser.add_argument('ingestion_address')
+        parser.add_argument('stream_key')
         data = parser.parse_args()
 
         try:
@@ -304,6 +309,9 @@ class UpdateStreamingPlatformResource(Resource):
 
             if data['service'] == 'VokalNow':
                 pass
+            if data['service'] == 'Custom':
+                streaming_platform.stream_key = data['stream_key']
+                streaming_platform.ingestion_address = data['ingestion_address'].rstrip('/')
             elif data['service'] == 'Youtube':
                 info = {
                     'refresh_token': streaming_platform.refresh_token,
