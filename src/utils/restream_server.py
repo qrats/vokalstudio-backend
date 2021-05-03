@@ -14,7 +14,7 @@ def ec2_client():
 
 def create_server(server_name):
     instances = ec2_client().run_instances(
-        ImageId="ami-0d1d9ede5a2fe1c2f",
+        ImageId="ami-0cda641bfe6f49832",
         MinCount=1,
         MaxCount=1,
         InstanceType="t3a.nano",
