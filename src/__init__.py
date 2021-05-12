@@ -1,9 +1,12 @@
 """Flask app config and initialization"""
 import logging.config
-from flask import Flask
 
 
 def create_app(config_obj=None):
+    # Imported inside the factory so that `src.domain` -- which is plain
+    # Python -- can be imported without the web stack installed.
+    from flask import Flask
+
     app = Flask(__name__)
 
     if not config_obj:
