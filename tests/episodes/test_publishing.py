@@ -4,24 +4,25 @@ from src.domain.episodes import publishing as mod
 from src.domain.media.asset import Asset
 from tests.support import DomainTestCase
 
-ASSET = Asset("u-1", "ep.mp3", 5_000_000, duration="30:00")
+ASSET = Asset("u-1", "episode-12.mp3", 5_000_000, duration="30:00")
+WHEN = "2021-05-01T10:00:00Z"
 
 
-def episode(title="Episode 12", **overrides):
+def episode(**overrides):
     payload = {
         "owner_id": "u-1",
         "series_slug": "vokal-weekly",
-        "title": title,
+        "title": "Episode 12",
         "asset": ASSET,
-        "notes": "Some notes.",
+        "notes": "A good conversation.",
         "number": 12,
     }
     payload.update(overrides)
     return Episode(**payload)
 
 
-def published(title="Episode 11", at="2021-05-01T10:00:00Z"):
-    return episode(title).mark_ready().publish(at)
+def published(title="Episode 1", at=WHEN):
+    return episode(title=title).mark_ready().publish(at)
 
 
 class StepTests(DomainTestCase):
@@ -33,32 +34,34 @@ class StepTests(DomainTestCase):
     def test_unknown_kind(self):
         self.assertField("kind", mod.PublicationStep, "tweet")
 
+    def test_detail_defaults_to_empty(self):
+        self.assertEqual({}, mod.PublicationStep(mod.FEED).detail)
+
     def test_detail_is_copied(self):
-        detail = {"a": 1}
-        step = mod.PublicationStep(mod.FEED, "x", detail)
-        detail["a"] = 2
+        given = {"a": 1}
+        step = mod.PublicationStep(mod.FEED, None, given)
+        given["a"] = 2
         self.assertEqual(1, step.detail["a"])
 
     def test_to_dict(self):
-        payload = mod.PublicationStep(mod.FEED, "x").to_dict()
-        self.assertEqual("feed", payload["kind"])
-        self.assertEqual({}, payload["detail"])
+        payload = mod.PublicationStep(mod.UPLOAD, "podbean", {"a": 1}).to_dict()
+        self.assertEqual("upload", payload["kind"])
+        self.assertEqual({"a": 1}, payload["detail"])
 
     def test_equality(self):
-        self.assertEqual(
-            mod.PublicationStep(mod.FEED, "x"), mod.PublicationStep(mod.FEED, "x")
-        )
+        self.assertEqual(mod.PublicationStep(mod.FEED), mod.PublicationStep(mod.FEED))
 
     def test_hashable(self):
-        one = mod.PublicationStep(mod.FEED, "x")
-        self.assertEqual(1, len({one, mod.PublicationStep(mod.FEED, "x")}))
+        self.assertEqual(
+            1, len({mod.PublicationStep(mod.FEED), mod.PublicationStep(mod.FEED)})
+        )
 
     def test_repr(self):
-        self.assertIn("feed", repr(mod.PublicationStep(mod.FEED, "x")))
+        self.assertIn("upload", repr(mod.PublicationStep(mod.UPLOAD, "podbean")))
 
 
 class PlanTests(DomainTestCase):
-    def test_minimum_plan(self):
+    def test_feed_and_notify_are_always_there(self):
         steps = mod.plan_publication(episode())
         self.assertEqual((mod.FEED, mod.NOTIFY), tuple(step.kind for step in steps))
 
@@ -70,7 +73,7 @@ class PlanTests(DomainTestCase):
         steps = mod.plan_publication(episode(), ["podbean", "spotify"])
         self.assertEqual(2, len(mod.steps_by_kind(steps, mod.UPLOAD)))
 
-    def test_upload_carries_the_episode(self):
+    def test_upload_carries_the_reference(self):
         steps = mod.plan_publication(episode(), ["podbean"])
         upload = mod.steps_by_kind(steps, mod.UPLOAD)[0]
         self.assertEqual(episode().reference, upload.detail["episode"])
@@ -79,29 +82,24 @@ class PlanTests(DomainTestCase):
         steps = mod.plan_publication(episode())
         self.assertEqual("vokal-weekly", mod.steps_by_kind(steps, mod.FEED)[0].target)
 
-    def test_missing_media_is_rejected(self):
+    def test_no_media(self):
         self.assertField("episode", mod.plan_publication, episode(asset=None))
 
-    def test_incomplete_episode_is_rejected(self):
+    def test_incomplete_episode(self):
         error = self.assertRaisesCode(
-            "validation_failed", mod.plan_publication, episode(notes=None)
+            "validation_failed", mod.plan_publication, episode(number=None)
         )
-        self.assertEqual(["show_notes"], error.details["missing"])
-
-    def test_publication_order(self):
-        steps = mod.plan_publication(episode(), ["podbean"], needs_render=True)
-        shuffled = tuple(reversed(steps))
-        self.assertEqual(steps, mod.publication_order(shuffled))
+        self.assertEqual(["number"], error.details["missing"])
 
 
 class AllowanceTests(DomainTestCase):
     def setUp(self):
         self.rights = Entitlement({"episodes.monthly": 2})
 
-    def test_under_the_limit(self):
+    def test_within_the_allowance(self):
         self.assertEqual(1, mod.check_monthly_allowance(self.rights, [published()], 2021, 5))
 
-    def test_at_the_limit(self):
+    def test_at_the_allowance(self):
         history = [published("A"), published("B")]
         self.assertRaisesCode(
             "quota_exceeded", mod.check_monthly_allowance, self.rights, history, 2021, 5
@@ -111,12 +109,21 @@ class AllowanceTests(DomainTestCase):
         history = [published("A"), published("B")]
         self.assertEqual(0, mod.check_monthly_allowance(self.rights, history, 2021, 6))
 
+    def test_unlimited_plan(self):
+        rights = Entitlement({"episodes.monthly": -1})
+        history = [published("A"), published("B"), published("C")]
+        self.assertEqual(3, mod.check_monthly_allowance(rights, history, 2021, 5))
+
     def test_remaining(self):
         self.assertEqual(1, mod.remaining_this_month(self.rights, [published()], 2021, 5))
 
-    def test_remaining_when_unlimited(self):
+    def test_remaining_when_used_up(self):
+        history = [published("A"), published("B")]
+        self.assertEqual(0, mod.remaining_this_month(self.rights, history, 2021, 5))
+
+    def test_remaining_is_none_when_unlimited(self):
         rights = Entitlement({"episodes.monthly": -1})
-        self.assertIsNone(mod.remaining_this_month(rights, [published()], 2021, 5))
+        self.assertIsNone(mod.remaining_this_month(rights, [], 2021, 5))
 
     def test_would_exceed(self):
         history = [published("A"), published("B")]
@@ -127,41 +134,70 @@ class AllowanceTests(DomainTestCase):
 
 
 class PublishTests(DomainTestCase):
-    def test_returns_the_published_episode(self):
+    def test_publishes_and_returns_the_steps(self):
         ready = episode().mark_ready()
-        result, steps = mod.publish(ready, "2021-05-03T10:00:00Z")
+        result, steps = mod.publish(ready, WHEN)
         self.assertEqual("published", result.state)
         self.assertEqual(2, len(steps))
 
-    def test_destinations_reach_the_steps(self):
-        ready = episode().mark_ready()
-        _, steps = mod.publish(ready, "2021-05-03T10:00:00Z", destinations=["podbean"])
+    def test_records_the_date(self):
+        result, _ = mod.publish(episode().mark_ready(), WHEN)
+        self.assertEqual(WHEN, result.published_at.to_iso())
+
+    def test_destinations_become_uploads(self):
+        _, steps = mod.publish(episode().mark_ready(), WHEN, destinations=["podbean"])
         self.assertEqual(1, len(mod.steps_by_kind(steps, mod.UPLOAD)))
 
-    def test_allowance_is_checked(self):
+    def test_allowance_is_enforced(self):
         rights = Entitlement({"episodes.monthly": 1})
-        ready = episode().mark_ready()
         self.assertRaisesCode(
             "quota_exceeded",
             mod.publish,
-            ready,
-            "2021-05-03T10:00:00Z",
+            episode(title="Episode 20").mark_ready(),
+            WHEN,
             rights,
             [published()],
         )
 
-    def test_allowance_in_a_different_month_passes(self):
+    def test_allowance_is_month_scoped(self):
         rights = Entitlement({"episodes.monthly": 1})
-        ready = episode().mark_ready()
-        result, _ = mod.publish(ready, "2021-06-03T10:00:00Z", rights, [published()])
+        result, _ = mod.publish(
+            episode(title="Episode 20").mark_ready(),
+            "2021-06-01T00:00:00Z",
+            rights,
+            [published()],
+        )
         self.assertEqual("published", result.state)
 
-    def test_render_is_requested(self):
-        ready = episode().mark_ready()
-        _, steps = mod.publish(ready, "2021-05-03T10:00:00Z", needs_render=True)
-        self.assertEqual(mod.RENDER, steps[0].kind)
+    def test_no_entitlement_skips_the_check(self):
+        result, _ = mod.publish(episode().mark_ready(), WHEN, episodes=[published()])
+        self.assertEqual("published", result.state)
 
     def test_a_draft_cannot_be_published(self):
-        self.assertRaisesCode(
-            "invalid_state", mod.publish, episode(), "2021-05-03T10:00:00Z"
+        self.assertRaisesCode("invalid_state", mod.publish, episode(), WHEN)
+
+
+class OrderTests(DomainTestCase):
+    def test_sorts_into_run_order(self):
+        steps = [
+            mod.PublicationStep(mod.NOTIFY),
+            mod.PublicationStep(mod.RENDER),
+            mod.PublicationStep(mod.UPLOAD, "podbean"),
+        ]
+        ordered = mod.publication_order(steps)
+        self.assertEqual(
+            (mod.RENDER, mod.UPLOAD, mod.NOTIFY), tuple(step.kind for step in ordered)
         )
+
+    def test_stable_within_a_kind(self):
+        steps = [
+            mod.PublicationStep(mod.UPLOAD, "b"),
+            mod.PublicationStep(mod.UPLOAD, "a"),
+        ]
+        self.assertEqual("b", mod.publication_order(steps)[0].target)
+
+    def test_empty(self):
+        self.assertEqual((), mod.publication_order([]))
+
+    def test_steps_by_kind_with_no_match(self):
+        self.assertEqual((), mod.steps_by_kind([mod.PublicationStep(mod.FEED)], mod.UPLOAD))
