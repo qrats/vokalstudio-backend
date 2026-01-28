@@ -1,12 +1,13 @@
 from src.domain.distribution import feed as mod
 from src.domain.episodes.chapters import Chapter
 from src.domain.episodes.episode import Episode
-from src.domain.episodes.series import SERIAL, Series
+from src.domain.episodes.series import Series
 from src.domain.media.asset import Asset
 from tests.support import DomainTestCase
 
+ASSET = Asset("u-1", "episode-12.mp3", 5_000_000, duration="30:00")
+SHOW = Series("u-1", "Vokal Weekly")
 BASE = "https://vokalstudio.com"
-ASSET = Asset("u-1", "ep.mp3", 5_000_000, duration="30:00")
 
 
 def episode(title="Episode 12", at="2021-05-01T10:00:00Z", **overrides):
@@ -15,58 +16,71 @@ def episode(title="Episode 12", at="2021-05-01T10:00:00Z", **overrides):
         "series_slug": "vokal-weekly",
         "title": title,
         "asset": ASSET,
-        "notes": "Some notes.",
+        "notes": "A good conversation.",
         "number": 12,
     }
     payload.update(overrides)
     return Episode(**payload).mark_ready().publish(at)
 
 
-def series(**overrides):
-    payload = {"owner_id": "u-1", "title": "Vokal Weekly"}
-    payload.update(overrides)
-    return Series(**payload)
-
-
-def feed(episodes=None, **overrides):
-    payload = {
-        "series": series(),
-        "episodes": episodes if episodes is not None else [episode()],
-        "base_url": BASE,
-        "artwork_url": "https://vokalstudio.com/art.png",
-        "description": "A weekly show.",
-    }
-    payload.update(overrides)
-    return mod.build_feed(**payload)
-
-
-class ShapeTests(DomainTestCase):
-    def test_title(self):
-        self.assertEqual("Vokal Weekly", feed()["title"])
-
-    def test_link(self):
-        self.assertEqual(BASE + "/vokal-weekly", feed()["link"])
+class BuildTests(DomainTestCase):
+    def test_title_and_link(self):
+        built = mod.build_feed(SHOW, [episode()], BASE)
+        self.assertEqual("Vokal Weekly", built["title"])
+        self.assertEqual(BASE + "/vokal-weekly", built["link"])
 
     def test_trailing_slash_is_trimmed(self):
-        built = feed(base_url=BASE + "/")
+        built = mod.build_feed(SHOW, [episode()], BASE + "/")
         self.assertEqual(BASE + "/vokal-weekly", built["link"])
 
     def test_count(self):
-        self.assertEqual(1, feed()["count"])
+        self.assertEqual(1, mod.build_feed(SHOW, [episode()], BASE)["count"])
 
-    def test_empty_description(self):
-        self.assertEqual("", feed(description="")["description"])
+    def test_only_visible_episodes(self):
+        draft = Episode("u-1", "vokal-weekly", "Draft", ASSET, "notes", number=1)
+        built = mod.build_feed(SHOW, [episode(), draft], BASE)
+        self.assertEqual(1, built["count"])
 
-    def test_explicit_flag(self):
-        self.assertTrue(feed(series=series(explicit=True))["explicit"])
+    def test_only_this_series(self):
+        other = episode(title="Elsewhere", series_slug="other-show")
+        built = mod.build_feed(SHOW, [episode(), other], BASE)
+        self.assertEqual(1, built["count"])
 
-    def test_ordering_is_reported(self):
-        self.assertEqual("episodic", feed()["ordering"])
+    def test_newest_first_for_an_episodic_show(self):
+        older = episode("Older", "2021-04-01T00:00:00Z")
+        newer = episode("Newer", "2021-06-01T00:00:00Z")
+        built = mod.build_feed(SHOW, [older, newer], BASE)
+        self.assertEqual("Newer", built["items"][0]["title"])
+
+    def test_oldest_first_for_a_serial_show(self):
+        serial = Series("u-1", "Vokal Weekly", ordering="serial")
+        older = episode("Older", "2021-04-01T00:00:00Z")
+        newer = episode("Newer", "2021-06-01T00:00:00Z")
+        built = mod.build_feed(serial, [newer, older], BASE)
+        self.assertEqual("Older", built["items"][0]["title"])
+
+    def test_description_is_optional(self):
+        self.assertEqual("", mod.build_feed(SHOW, [], BASE)["description"])
+
+    def test_description_is_carried(self):
+        built = mod.build_feed(SHOW, [], BASE, description="A weekly show.")
+        self.assertEqual("A weekly show.", built["description"])
+
+    def test_artwork(self):
+        built = mod.build_feed(SHOW, [], BASE, artwork_url="https://x.test/a.png")
+        self.assertEqual("https://x.test/a.png", built["image"])
+
+    def test_explicit_flag_comes_from_the_show(self):
+        explicit = Series("u-1", "Vokal Weekly", explicit=True)
+        self.assertTrue(mod.build_feed(explicit, [], BASE)["explicit"])
+
+    def test_empty_base_url(self):
+        self.assertField("base_url", mod.build_feed, SHOW, [], "")
 
 
 class ItemTests(DomainTestCase):
     def setUp(self):
-        self.item = feed()["items"][0]
+        self.item = mod.build_feed(SHOW, [episode()], BASE)["items"][0]
 
     def test_guid_is_the_reference(self):
         self.assertEqual(episode().reference, self.item["guid"])
@@ -75,7 +89,7 @@ class ItemTests(DomainTestCase):
         self.assertEqual(BASE + "/vokal-weekly/episode-12", self.item["link"])
 
     def test_enclosure_url(self):
-        self.assertTrue(self.item["enclosure"]["url"].endswith(ASSET.key))
+        self.assertEqual(BASE + "/media/" + ASSET.key, self.item["enclosure"]["url"])
 
     def test_enclosure_length(self):
         self.assertEqual(5_000_000, self.item["enclosure"]["length"])
@@ -86,91 +100,72 @@ class ItemTests(DomainTestCase):
     def test_duration(self):
         self.assertEqual(1_800_000, self.item["duration_millis"])
 
-    def test_number(self):
+    def test_episode_number(self):
         self.assertEqual(12, self.item["episode"])
 
-    def test_season_is_absent_when_unset(self):
+    def test_season_is_omitted_when_absent(self):
         self.assertNotIn("season", self.item)
 
-    def test_season_is_present_when_set(self):
-        one = episode(season=2)
-        item = mod.build_feed(series(seasons=True), [one], BASE)["items"][0]
-        self.assertEqual(2, item["season"])
+    def test_season_is_included(self):
+        built = mod.build_feed(SHOW, [episode(season=2)], BASE)
+        self.assertEqual(2, built["items"][0]["season"])
 
-    def test_chapters_are_absent_by_default(self):
+    def test_chapters_are_omitted_when_absent(self):
         self.assertNotIn("chapters", self.item)
 
     def test_chapters_are_included(self):
         one = episode(chapters=[Chapter(0, "Intro")])
-        item = mod.build_feed(series(), [one], BASE)["items"][0]
-        self.assertEqual(1, len(item["chapters"]))
+        built = mod.build_feed(SHOW, [one], BASE)
+        self.assertEqual(1, len(built["items"][0]["chapters"]))
 
     def test_published_at(self):
         self.assertEqual("2021-05-01T10:00:00Z", self.item["published_at"])
 
-
-class SelectionTests(DomainTestCase):
-    def test_only_published_episodes(self):
-        draft = Episode("u-1", "vokal-weekly", "Draft")
-        self.assertEqual(1, feed([episode(), draft])["count"])
-
-    def test_only_this_series(self):
-        other = Episode(
-            "u-1", "other-show", "Elsewhere", asset=ASSET, notes="N", number=1
-        ).mark_ready().publish("2021-05-01T10:00:00Z")
-        self.assertEqual(1, feed([episode(), other])["count"])
-
-    def test_newest_first_for_episodic(self):
-        older = episode("Older", "2021-04-01T10:00:00Z")
-        newer = episode("Newer", "2021-06-01T10:00:00Z")
-        built = feed([older, newer])
-        self.assertEqual("Newer", built["items"][0]["title"])
-
-    def test_oldest_first_for_serial(self):
-        older = episode("Older", "2021-04-01T10:00:00Z")
-        newer = episode("Newer", "2021-06-01T10:00:00Z")
-        built = feed([newer, older], series=series(ordering=SERIAL))
-        self.assertEqual("Older", built["items"][0]["title"])
-
-    def test_no_episodes(self):
-        self.assertEqual(0, feed([])["count"])
+    def test_description(self):
+        self.assertEqual("A good conversation.", self.item["description"])
 
 
 class HelperTests(DomainTestCase):
     def test_latest_item(self):
-        self.assertEqual("Episode 12", mod.latest_item(feed())["title"])
+        built = mod.build_feed(SHOW, [episode()], BASE)
+        self.assertEqual("Episode 12", mod.latest_item(built)["title"])
 
     def test_latest_item_of_an_empty_feed(self):
-        self.assertIsNone(mod.latest_item(feed([])))
+        self.assertIsNone(mod.latest_item(mod.build_feed(SHOW, [], BASE)))
 
     def test_total_duration(self):
-        built = feed([episode("A", "2021-04-01T10:00:00Z"), episode("B")])
+        built = mod.build_feed(SHOW, [episode(), episode("Other")], BASE)
         self.assertEqual(3_600_000, mod.total_duration_millis(built))
 
     def test_total_duration_of_an_empty_feed(self):
-        self.assertEqual(0, mod.total_duration_millis(feed([])))
+        self.assertEqual(0, mod.total_duration_millis(mod.build_feed(SHOW, [], BASE)))
 
     def test_guids(self):
-        self.assertEqual((episode().reference,), mod.guids(feed()))
+        built = mod.build_feed(SHOW, [episode()], BASE)
+        self.assertEqual((episode().reference,), mod.guids(built))
 
 
 class ValidationTests(DomainTestCase):
-    def test_a_complete_feed_passes(self):
-        self.assertEqual((), mod.validate_feed(feed()))
+    def test_a_complete_feed(self):
+        built = mod.build_feed(
+            SHOW, [episode()], BASE, "https://x.test/a.png", "A weekly show."
+        )
+        self.assertEqual((), mod.validate_feed(built))
 
-    def test_missing_description(self):
-        self.assertEqual(("description",), mod.validate_feed(feed(description="")))
-
-    def test_missing_image(self):
-        self.assertEqual(("image",), mod.validate_feed(feed(artwork_url=None)))
+    def test_missing_description_and_image(self):
+        built = mod.build_feed(SHOW, [episode()], BASE)
+        self.assertEqual(("description", "image"), mod.validate_feed(built))
 
     def test_no_items(self):
-        self.assertIn("items", mod.validate_feed(feed([])))
+        built = mod.build_feed(SHOW, [], BASE, "https://x.test/a.png", "A show.")
+        self.assertEqual(("items",), mod.validate_feed(built))
 
     def test_duplicate_guids(self):
-        built = feed([episode(), episode()])
+        built = mod.build_feed(
+            SHOW, [episode(), episode()], BASE, "https://x.test/a.png", "A show."
+        )
         self.assertIn("duplicate_guid", mod.validate_feed(built))
 
     def test_problems_are_sorted(self):
-        found = mod.validate_feed(feed([], description="", artwork_url=None))
-        self.assertEqual(tuple(sorted(found)), found)
+        problems = mod.validate_feed(mod.build_feed(SHOW, [], BASE))
+        self.assertEqual(tuple(sorted(problems)), problems)
