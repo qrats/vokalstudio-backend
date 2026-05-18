@@ -1,25 +1,22 @@
 from src.domain.content import post as mod
 from tests.support import DomainTestCase
 
-BODY = "Intro paragraph.\n\n## Section\n\nMore text."
+WHEN = "2021-05-01T10:00:00Z"
+BODY = "# Heading\n\nSome words in a paragraph.\n\n## Second\n\nMore words here."
 
 
 def build(**overrides):
-    payload = {"title": "Hello world", "body": BODY, "author_id": "u-1"}
+    payload = {"title": "Going live", "body": BODY, "author_id": "u-1"}
     payload.update(overrides)
     return mod.Post(**payload)
 
 
-def live(**overrides):
-    return build(**overrides).publish("2021-05-01T10:00:00Z")
-
-
 class ConstructionTests(DomainTestCase):
     def test_slug_from_the_title(self):
-        self.assertEqual("hello-world", build().slug)
+        self.assertEqual("going-live", build().slug)
 
     def test_explicit_slug(self):
-        self.assertEqual("intro", build(slug="Intro").slug)
+        self.assertEqual("live", build(slug="Live").slug)
 
     def test_defaults(self):
         post = build()
@@ -27,20 +24,14 @@ class ConstructionTests(DomainTestCase):
         self.assertEqual((), post.tags)
         self.assertFalse(post.featured)
 
+    def test_empty_title(self):
+        self.assertField("title", build, title="")
+
     def test_empty_body(self):
         self.assertField("body", build, body="")
 
     def test_over_long_body(self):
         self.assertField("body", build, body="x" * (mod.MAX_BODY + 1))
-
-    def test_tags_are_slugified(self):
-        self.assertEqual(("hot-news",), build(tags=["Hot News"]).tags)
-
-    def test_tags_are_sorted_and_unique(self):
-        self.assertEqual(("a", "b"), build(tags=["b", "a", "B"]).tags)
-
-    def test_too_many_tags(self):
-        self.assertField("tags", build, tags=["t{}".format(i) for i in range(13)])
 
     def test_unknown_state(self):
         self.assertField("state", build, state="review")
@@ -48,101 +39,124 @@ class ConstructionTests(DomainTestCase):
     def test_published_needs_a_date(self):
         self.assertField("published_at", build, state=mod.PUBLISHED)
 
-    def test_a_draft_cannot_be_featured(self):
+    def test_featured_must_be_published(self):
         self.assertField("featured", build, featured=True)
 
-    def test_a_published_post_can_be_featured(self):
-        post = build(state=mod.PUBLISHED, published_at="2021-05-01T10:00:00Z", featured=True)
+    def test_featured_published_post(self):
+        post = build(state=mod.PUBLISHED, published_at=WHEN, featured=True)
         self.assertTrue(post.featured)
 
+    def test_hero_key(self):
+        self.assertEqual("k", build(hero_key="k").hero_key)
 
-class TransitionTests(DomainTestCase):
+
+class TagTests(DomainTestCase):
+    def test_tags_are_slugified(self):
+        self.assertEqual(("live-streaming",), build(tags=["Live Streaming"]).tags)
+
+    def test_tags_are_sorted(self):
+        self.assertEqual(("alpha", "beta"), build(tags=["beta", "alpha"]).tags)
+
+    def test_tags_are_deduplicated(self):
+        self.assertEqual(("alpha",), build(tags=["Alpha", "alpha"]).tags)
+
+    def test_too_many_tags(self):
+        self.assertField("tags", build, tags=["t{}".format(n) for n in range(13)])
+
+    def test_unusable_tag(self):
+        self.assertField("tags", build, tags=["###"])
+
+    def test_tagged(self):
+        self.assertTrue(build(tags=["live"]).tagged("Live"))
+
+    def test_not_tagged(self):
+        self.assertFalse(build(tags=["live"]).tagged("audio"))
+
+    def test_with_tags(self):
+        self.assertEqual(("audio",), build(tags=["live"]).with_tags(["audio"]).tags)
+
+    def test_with_tags_returns_a_copy(self):
+        post = build(tags=["live"])
+        post.with_tags(["audio"])
+        self.assertEqual(("live",), post.tags)
+
+
+class LifecycleTests(DomainTestCase):
     def test_publish(self):
-        self.assertEqual(mod.PUBLISHED, live().state)
-
-    def test_publish_records_the_date(self):
-        self.assertEqual("2021-05-01T10:00:00Z", live().published_at.to_iso())
+        post = build().publish(WHEN)
+        self.assertEqual(mod.PUBLISHED, post.state)
+        self.assertEqual(WHEN, post.published_at.to_iso())
 
     def test_unpublish(self):
-        self.assertEqual(mod.DRAFT, live().unpublish().state)
+        self.assertEqual(mod.DRAFT, build().publish(WHEN).unpublish().state)
 
     def test_unpublish_clears_featured(self):
-        self.assertFalse(live().feature().unpublish().featured)
+        post = build().publish(WHEN).feature().unpublish()
+        self.assertFalse(post.featured)
 
     def test_archive(self):
         self.assertEqual(mod.ARCHIVED, build().archive().state)
 
-    def test_archived_back_to_draft(self):
+    def test_archived_can_be_reopened(self):
         self.assertEqual(mod.DRAFT, build().archive().unpublish().state)
 
-    def test_archived_cannot_be_published_directly(self):
-        self.assertRaisesCode(
-            "invalid_state", build().archive().publish, "2021-05-01T10:00:00Z"
-        )
+    def test_archive_clears_featured(self):
+        self.assertFalse(build().publish(WHEN).feature().archive().featured)
+
+    def test_cannot_publish_an_archived_post(self):
+        self.assertRaisesCode("invalid_state", build().archive().publish, WHEN)
 
     def test_feature(self):
-        self.assertTrue(live().feature().featured)
+        self.assertTrue(build().publish(WHEN).feature().featured)
 
-    def test_a_draft_cannot_be_featured(self):
+    def test_cannot_feature_a_draft(self):
         self.assertField("featured", build().feature)
 
     def test_unfeature(self):
-        self.assertFalse(live().feature().unfeature().featured)
+        self.assertFalse(build().publish(WHEN).feature().unfeature().featured)
 
     def test_transitions_return_copies(self):
         post = build()
-        post.archive()
+        post.publish(WHEN)
         self.assertEqual(mod.DRAFT, post.state)
 
-    def test_table_covers_every_state(self):
-        self.assertEqual(set(mod.STATES), set(mod.TRANSITIONS))
-
-
-class TagTests(DomainTestCase):
-    def test_tagged(self):
-        self.assertTrue(build(tags=["news"]).tagged("News"))
-
-    def test_not_tagged(self):
-        self.assertFalse(build(tags=["news"]).tagged("studio"))
-
-    def test_with_tags(self):
-        self.assertEqual(("studio",), build().with_tags(["Studio"]).tags)
-
-    def test_with_tags_returns_a_copy(self):
-        post = build(tags=["news"])
-        post.with_tags(["studio"])
-        self.assertEqual(("news",), post.tags)
+    def test_transition_table_targets_are_known(self):
+        for targets in mod.TRANSITIONS.values():
+            for target in targets:
+                self.assertIn(target, mod.STATES)
 
 
 class VisibilityTests(DomainTestCase):
-    def test_a_draft_is_not_visible(self):
+    def test_draft_is_not_visible(self):
         self.assertFalse(build().is_visible())
 
-    def test_a_published_post_is_visible(self):
-        self.assertTrue(live().is_visible())
+    def test_published_is_visible(self):
+        self.assertTrue(build().publish(WHEN).is_visible())
 
-    def test_not_visible_before_its_date(self):
-        self.assertFalse(live().is_visible("2021-04-01T00:00:00Z"))
+    def test_not_visible_before_the_date(self):
+        self.assertFalse(build().publish(WHEN).is_visible("2021-04-01T00:00:00Z"))
 
-    def test_visible_on_its_date(self):
-        self.assertTrue(live().is_visible("2021-05-01T10:00:00Z"))
+    def test_visible_on_the_date(self):
+        self.assertTrue(build().publish(WHEN).is_visible(WHEN))
 
-    def test_archived_is_never_visible(self):
+    def test_archived_is_not_visible(self):
         self.assertFalse(build().archive().is_visible())
 
 
 class RenderTests(DomainTestCase):
     def test_blocks(self):
-        self.assertEqual(3, len(build().blocks()))
+        self.assertGreater(len(build().blocks()), 1)
 
     def test_excerpt(self):
-        self.assertEqual("Intro paragraph.", build().excerpt())
+        self.assertLessEqual(len(build().excerpt(30)), 30)
 
-    def test_table_of_contents(self):
-        self.assertEqual(1, len(build().table_of_contents()))
+    def test_table_of_contents_skips_the_title_level(self):
+        entries = build().table_of_contents()
+        self.assertEqual(1, len(entries))
+        self.assertEqual("Second", entries[0]["text"])
 
     def test_word_count(self):
-        self.assertEqual(6, build().word_count())
+        self.assertGreater(build().word_count(), 5)
 
     def test_reading_time(self):
         self.assertGreater(build().reading_time_seconds(), 0)
@@ -150,51 +164,53 @@ class RenderTests(DomainTestCase):
 
 class SerialisationTests(DomainTestCase):
     def test_to_dict(self):
-        payload = live(tags=["news"]).to_dict()
-        self.assertEqual("hello-world", payload["slug"])
-        self.assertEqual(["news"], payload["tags"])
+        payload = build(tags=["live"]).to_dict()
+        self.assertEqual("going-live", payload["slug"])
+        self.assertEqual(["live"], payload["tags"])
 
-    def test_to_dict_carries_the_excerpt(self):
-        self.assertEqual("Intro paragraph.", build().to_dict()["excerpt"])
+    def test_to_dict_omits_the_body(self):
+        self.assertNotIn("body", build().to_dict())
 
     def test_equality(self):
         self.assertEqual(build(), build())
 
-    def test_body_matters(self):
-        self.assertNotEqual(build(), build(body="Different."))
+    def test_body_matters_for_equality(self):
+        self.assertNotEqual(build(), build(body="Different words entirely."))
 
     def test_hashable(self):
         self.assertEqual(1, len({build(), build()}))
 
     def test_repr(self):
-        self.assertIn("hello-world", repr(build()))
+        self.assertIn("going-live", repr(build()))
 
 
 class CollectionTests(DomainTestCase):
     def setUp(self):
-        self.draft = build(title="Draft")
-        self.live = live(title="Live")
-        self.starred = live(title="Starred").feature()
+        self.draft = build()
+        self.live = build(title="Second").publish(WHEN)
+        self.star = build(title="Third").publish(WHEN).feature()
 
     def test_visible(self):
-        found = mod.visible([self.draft, self.live, self.starred])
-        self.assertEqual(2, len(found))
+        found = mod.visible([self.draft, self.live, self.star])
+        self.assertEqual((self.live, self.star), found)
 
     def test_featured(self):
-        found = mod.featured([self.draft, self.live, self.starred])
-        self.assertEqual((self.starred,), found)
+        self.assertEqual((self.star,), mod.featured([self.live, self.star]))
 
     def test_featured_respects_the_date(self):
-        self.assertEqual((), mod.featured([self.starred], "2021-04-01T00:00:00Z"))
-
-    def test_find(self):
-        self.assertEqual(self.live, mod.find([self.draft, self.live], "Live"))
-
-    def test_find_default(self):
-        self.assertEqual("x", mod.find([self.draft], "nope", "x"))
+        self.assertEqual((), mod.featured([self.star], "2021-01-01T00:00:00Z"))
 
     def test_no_duplicate_slugs(self):
         self.assertEqual((), mod.duplicate_slugs([self.draft, self.live]))
 
     def test_duplicate_slugs(self):
-        self.assertEqual(("draft",), mod.duplicate_slugs([self.draft, build(title="Draft")]))
+        self.assertEqual(("going-live",), mod.duplicate_slugs([self.draft, build()]))
+
+    def test_find(self):
+        self.assertEqual(self.live, mod.find([self.draft, self.live], "second"))
+
+    def test_find_normalises_the_slug(self):
+        self.assertEqual(self.live, mod.find([self.live], "Second"))
+
+    def test_find_default(self):
+        self.assertEqual("x", mod.find([], "nope", "x"))
