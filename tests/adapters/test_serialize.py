@@ -1,70 +1,82 @@
 from src.domain.adapters import serialize as mod
-from src.domain.core.errors import NotFoundError, ValidationError
-from src.domain.media.asset import Asset
+from src.domain.core.errors import NotFoundError
+from src.domain.money.amount import Money
 from tests.support import DomainTestCase
-
-ASSET = Asset("u-1", "ep.mp3", 500, duration=1000)
 
 
 class ScrubTests(DomainTestCase):
-    def test_removes_a_stream_key(self):
-        self.assertEqual({"a": 1}, mod.scrub({"a": 1, "stream_key": "secret"}))
+    def test_removes_a_secret(self):
+        self.assertEqual({"a": 1}, mod.scrub({"a": 1, "stream_key": "x"}))
 
-    def test_removes_a_token(self):
-        self.assertNotIn("token", mod.scrub({"token": "abc"}))
+    def test_removes_every_known_secret(self):
+        payload = {key: "x" for key in mod.SECRET_KEYS}
+        self.assertEqual({}, mod.scrub(payload))
 
-    def test_removes_nested_secrets(self):
-        found = mod.scrub({"target": {"stream_key": "s", "platform": "youtube"}})
-        self.assertEqual({"target": {"platform": "youtube"}}, found)
+    def test_recurses_into_nested_dicts(self):
+        found = mod.scrub({"a": {"token": "x", "b": 1}})
+        self.assertEqual({"a": {"b": 1}}, found)
 
-    def test_scrubs_inside_lists(self):
-        found = mod.scrub({"targets": [{"stream_key": "s", "id": 1}]})
-        self.assertEqual([{"id": 1}], found["targets"])
-
-    def test_leaves_scalars_alone(self):
-        self.assertEqual(1, mod.scrub(1))
+    def test_recurses_into_lists(self):
+        found = mod.scrub([{"token": "x", "b": 1}])
+        self.assertEqual([{"b": 1}], found)
 
     def test_tuples_become_lists(self):
         self.assertEqual([1, 2], mod.scrub((1, 2)))
 
-    def test_every_secret_key_is_removed(self):
-        payload = {key: "x" for key in mod.SECRET_KEYS}
-        self.assertEqual({}, mod.scrub(payload))
+    def test_scalars_pass_through(self):
+        self.assertEqual(1, mod.scrub(1))
+
+    def test_leaves_the_original_alone(self):
+        payload = {"a": 1, "token": "x"}
+        mod.scrub(payload)
+        self.assertIn("token", payload)
 
 
-class EnvelopeTests(DomainTestCase):
-    def test_one_serialises_the_object(self):
-        self.assertEqual("audio", mod.one(ASSET)["data"]["kind"])
+class OneTests(DomainTestCase):
+    def test_wraps_a_value_object(self):
+        self.assertEqual({"data": Money(1).to_dict()}, mod.one(Money(1)))
 
-    def test_one_accepts_a_plain_value(self):
-        self.assertEqual({"a": 1}, mod.one({"a": 1})["data"])
+    def test_wraps_a_plain_value(self):
+        self.assertEqual({"data": {"a": 1}}, mod.one({"a": 1}))
 
-    def test_one_without_meta(self):
-        self.assertNotIn("meta", mod.one(ASSET))
+    def test_meta_is_optional(self):
+        self.assertNotIn("meta", mod.one(Money(1)))
 
-    def test_one_with_meta(self):
-        self.assertEqual({"cached": True}, mod.one(ASSET, {"cached": True})["meta"])
+    def test_meta_is_included(self):
+        self.assertEqual({"page": 1}, mod.one(Money(1), {"page": 1})["meta"])
 
-    def test_many_counts(self):
-        self.assertEqual(2, mod.many([ASSET, ASSET])["meta"]["count"])
+    def test_meta_is_copied(self):
+        meta = {"page": 1}
+        body = mod.one(Money(1), meta)
+        meta["page"] = 2
+        self.assertEqual(1, body["meta"]["page"])
 
-    def test_many_of_nothing(self):
+
+class ManyTests(DomainTestCase):
+    def test_wraps_a_list(self):
+        body = mod.many([Money(1), Money(2)])
+        self.assertEqual(2, len(body["data"]))
+
+    def test_count_is_added(self):
+        self.assertEqual(2, mod.many([Money(1), Money(2)])["meta"]["count"])
+
+    def test_explicit_count_is_kept(self):
+        body = mod.many([Money(1)], {"count": 99})
+        self.assertEqual(99, body["meta"]["count"])
+
+    def test_empty(self):
         body = mod.many([])
         self.assertEqual([], body["data"])
         self.assertEqual(0, body["meta"]["count"])
 
-    def test_many_keeps_supplied_meta(self):
-        body = mod.many([ASSET], {"source": "cache"})
-        self.assertEqual("cache", body["meta"]["source"])
-
-    def test_supplied_count_wins(self):
-        self.assertEqual(99, mod.many([ASSET], {"count": 99})["meta"]["count"])
+    def test_plain_values(self):
+        self.assertEqual([{"a": 1}], mod.many([{"a": 1}])["data"])
 
 
 class PageTests(DomainTestCase):
     def setUp(self):
         self.result = {
-            "items": [ASSET],
+            "items": [Money(1)],
             "total": 5,
             "page": 2,
             "page_size": 1,
@@ -76,7 +88,7 @@ class PageTests(DomainTestCase):
     def test_data(self):
         self.assertEqual(1, len(mod.page(self.result)["data"]))
 
-    def test_paging_meta(self):
+    def test_paging_metadata(self):
         meta = mod.page(self.result)["meta"]
         self.assertEqual(5, meta["total"])
         self.assertEqual(2, meta["page"])
@@ -86,23 +98,19 @@ class PageTests(DomainTestCase):
         self.assertEqual(1, mod.page(self.result)["meta"]["count"])
 
     def test_extra_meta_is_kept(self):
-        meta = mod.page(self.result, {"query": "live"})["meta"]
-        self.assertEqual("live", meta["query"])
+        meta = mod.page(self.result, {"query": "x"})["meta"]
+        self.assertEqual("x", meta["query"])
 
 
 class ErrorTests(DomainTestCase):
     def test_domain_error(self):
-        body, status = mod.error(ValidationError("bad", field="title"))
-        self.assertEqual(422, status)
-        self.assertEqual("validation_failed", body["code"])
+        body, status = mod.error(NotFoundError("gone", kind="episode"))
+        self.assertEqual("not_found", body["code"])
+        self.assertEqual(404, status)
 
     def test_details_are_carried(self):
-        body, _ = mod.error(ValidationError("bad", field="title"))
-        self.assertEqual("title", body["details"]["field"])
-
-    def test_not_found(self):
-        _, status = mod.error(NotFoundError("gone"))
-        self.assertEqual(404, status)
+        body, _ = mod.error(NotFoundError("gone", kind="episode"))
+        self.assertEqual("episode", body["details"]["kind"])
 
     def test_unexpected_error(self):
         body, status = mod.error(ValueError("boom"))
@@ -114,7 +122,7 @@ class ErrorTests(DomainTestCase):
         self.assertNotIn("secret", body["message"])
 
 
-class TruncateTests(DomainTestCase):
+class TruncatedTests(DomainTestCase):
     def test_under_the_limit(self):
         found = mod.truncated([1, 2], 5)
         self.assertEqual([1, 2], found["items"])
@@ -125,14 +133,14 @@ class TruncateTests(DomainTestCase):
         self.assertEqual([1, 2], found["items"])
         self.assertTrue(found["truncated"])
 
-    def test_total_is_the_whole_input(self):
-        self.assertEqual(3, mod.truncated([1, 2, 3], 2)["total"])
-
-    def test_exactly_the_limit(self):
+    def test_exactly_at_the_limit(self):
         self.assertFalse(mod.truncated([1, 2], 2)["truncated"])
+
+    def test_total_is_the_full_length(self):
+        self.assertEqual(3, mod.truncated([1, 2, 3], 2)["total"])
 
     def test_empty(self):
         self.assertEqual([], mod.truncated([], 2)["items"])
 
-    def test_limit_floor(self):
+    def test_zero_limit_is_rejected(self):
         self.assertField("limit", mod.truncated, [1], 0)
