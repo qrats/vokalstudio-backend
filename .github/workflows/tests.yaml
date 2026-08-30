@@ -1,0 +1,32 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # No install step on purpose: src/domain and the suite are stdlib only,
+      # and check_domain.py below is what keeps it that way.
+      - name: Check the domain layer has no framework imports
+        run: python scripts/check_domain.py
+
+      - name: Run the domain test suite
+        run: python -m unittest discover -s tests -t . -v

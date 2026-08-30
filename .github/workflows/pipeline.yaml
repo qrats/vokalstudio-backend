@@ -10,6 +10,11 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Deploying needs HOST/USERNAME/PORT/SSHKEY. Without them the scp step
+    # fails on every push, so the job is opted into with a repository variable
+    # and otherwise reports as skipped.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+
     steps:
     - uses: actions/checkout@v1
 
